@@ -1,4 +1,4 @@
-# Group-10-project
+
 # 🔐 Intrusion Detection System (IDS) – AI Upgradable
 
 ## 📘 Overview
