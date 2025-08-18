@@ -3,6 +3,10 @@
 An **AI-driven scam detection system** that leverages **Natural Language Processing (NLP)** and **Machine Learning (ML)** to identify scam communications such as phishing emails, SMS fraud, and online investment scams.  
 The tool provides a **classification result (Scam/Legit)**, a **confidence score**, and **explanations** highlighting suspicious indicators (e.g., urgent language, OTP requests, malicious URLs).  
 
+🔗 **Live Demo**: [Scam Detection Tool](https://9yhyi3c8kokl.manus.space)
+
+---
+
 ## 🚀 Project Scope
 - Detects **text-based scams** (emails, SMS, social media messages).  
 - Focus on **Ethiopia-specific scams** such as **Telebirr fraud, SIM swap, wangiri fraud, phishing, and romance scams**.  
