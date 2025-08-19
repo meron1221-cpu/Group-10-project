@@ -79,7 +79,5 @@ The tool is optimized to detect 8 high-priority scam categories in Ethiopia:
 ## 🤝 Contributing
 Contributions are welcome! Please fork the repo, create a feature branch, and submit a pull request.  
 
-## 📜 License
-This project is licensed under the **MIT License**. See [LICENSE](LICENSE) for details.  
 
 ---
