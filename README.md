@@ -4,6 +4,7 @@ An **AI-driven scam detection system** that leverages **Natural Language Process
 The tool provides a **classification result (Scam/Legit)**, a **confidence score**, and **explanations** highlighting suspicious indicators (e.g., urgent language, OTP requests, malicious URLs).  
 
 🔗 **Live Demo**: [Scam Detection Tool](https://9yhyi3c8kokl.manus.space)
+🔗 **Live Demo**: [Another Demo](https://lnh8imcnke0p.manus.space/)
 
 ---
 
