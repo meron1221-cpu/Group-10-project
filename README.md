@@ -73,12 +73,10 @@ The tool is optimized to detect 8 high-priority scam categories in Ethiopia:
 | 7    | Final Review & Documentation  | 🔜 Pending |
 
 ## 📌 Future Extensions
-- 🔹 Support for **Amharic & other Ethiopian languages**  
+- 🔹 Support for **Amharic & for  other Ethiopian languages**  
 - 🔹 Image-based scam detection (fake websites, deepfakes)  
 - 🔹 Mobile app integration for **offline scam checking**  
 
-## 🤝 Contributing
-Contributions are welcome! Please fork the repo, create a feature branch, and submit a pull request.  
 
 
 ---
