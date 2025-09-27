@@ -66,8 +66,8 @@ The tool is optimized to detect 8 high-priority scam categories in Ethiopia:
 | Week | Task                          | Status |
 |------|-------------------------------|--------|
 | 1    | Research & Planning           | ✅ Done |
-| 2    | Data Collection & Preprocessing | 🔜 In Progress |
-| 3–4  | Model Development (BERT Tuning) | 🔜 Pending |
+| 2    | Data Collection & Preprocessing |✅ Done|
+| 3–4  | Model Development (BERT Tuning) | 🔜 In Progress  |
 | 5    | Integration & Implementation  | 🔜 Pending |
 | 6    | Testing & Deployment          | 🔜 Pending |
 | 7    | Final Review & Documentation  | 🔜 Pending |
