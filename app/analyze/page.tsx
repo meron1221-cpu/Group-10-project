@@ -1,7 +1,7 @@
 "use client";
 
 import type React from "react";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Shield,
   Upload,
@@ -33,6 +33,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import Link from "next/link";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { motion, useInView, animate } from "framer-motion";
 
 // --- INTERFACES ---
 interface ScamAnalysisResult {
@@ -51,6 +52,48 @@ interface ScamAnalysisResult {
 }
 
 type InputSource = "email" | "sms" | "file";
+
+// A reusable component for scroll-triggered animations
+function AnimatedSection({
+  children,
+  className = "",
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 50 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.2 }}
+      transition={{ duration: 0.6, ease: "easeOut" }}
+      className={className}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+// A reusable component for the animated number counter
+function Counter({ to }: { to: number }) {
+  const ref = useRef<HTMLSpanElement | null>(null);
+  const isInView = useInView(ref, { once: true });
+
+  useEffect(() => {
+    if (isInView && ref.current) {
+      animate(0, to, {
+        duration: 2,
+        onUpdate(value) {
+          if (ref.current) {
+            ref.current.textContent = Math.round(value).toLocaleString();
+          }
+        },
+      });
+    }
+  }, [isInView, to]);
+
+  return <span ref={ref}>0</span>;
+}
 
 // --- MAIN COMPONENT ---
 export default function AnalyzePage() {
@@ -94,8 +137,13 @@ export default function AnalyzePage() {
   };
 
   const analyzeContent = async () => {
-    let payload = {};
-    let contentToAnalyze = "";
+    let payload: {
+      sourceType: InputSource;
+      subject?: string;
+      body: string;
+      fileName?: string;
+    };
+    let contentToAnalyze: string;
 
     // Construct payload based on the selected input source
     switch (inputSource) {
@@ -120,10 +168,14 @@ export default function AnalyzePage() {
         contentToAnalyze = fileContent;
         break;
       default:
-        return; // Should not happen
+        setError("Invalid input source selected.");
+        return;
     }
 
-    if (!contentToAnalyze.trim()) return;
+    if (!contentToAnalyze.trim()) {
+      setError("Please provide content to analyze.");
+      return;
+    }
 
     setIsAnalyzing(true);
     setError(null);
@@ -152,25 +204,25 @@ export default function AnalyzePage() {
     switch (level) {
       case "high":
         return {
-          text: "text-ethiopian-red",
+          text: "text-red-600", // Using a standard Tailwind color for simplicity
           bg: "bg-red-50",
           border: "border-red-200",
-          progress: "bg-ethiopian-red",
+          progress: "bg-red-600",
         };
       case "medium":
         return {
-          text: "text-ethiopian-yellow",
+          text: "text-yellow-600", // Using a standard Tailwind color
           bg: "bg-yellow-50",
           border: "border-yellow-200",
-          progress: "bg-ethiopian-yellow",
+          progress: "bg-yellow-600",
         };
       case "low":
       default:
         return {
-          text: "text-ethiopian-green",
+          text: "text-green-600", // Using a standard Tailwind color
           bg: "bg-green-50",
           border: "border-green-200",
-          progress: "bg-ethiopian-green",
+          progress: "bg-green-600",
         };
     }
   };
@@ -479,7 +531,7 @@ export default function AnalyzePage() {
           </Link>
           <div className="flex items-center gap-2">
             <Shield className="h-7 w-7 text-blue-600" />
-            <span className="text-xl font-bold text-gray-800">PhishGuard</span>
+            <span className="text-xl font-bold text-gray-800">GuardSphere</span>
           </div>
           <div className="w-20 text-right text-sm text-gray-500 hidden sm:block">
             Analysis
@@ -489,6 +541,13 @@ export default function AnalyzePage() {
 
       <main className="container mx-auto px-4 py-8 md:py-12">
         <div className="mx-auto max-w-4xl">
+          {error && (
+            <Alert variant="destructive" className="mb-6">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
           {!result && (
             <div className="mb-10 text-center">
               <h1 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl md:text-5xl">
@@ -510,16 +569,16 @@ export default function AnalyzePage() {
   );
 }
 
-// --- UPDATED MOCK ANALYSIS LOGIC TO SIMULATE YOUR BACKEND ---
+// --- MOCK ANALYSIS LOGIC ---
 const performScamAnalysis = (payload: {
   sourceType: string;
   subject?: string;
   body: string;
+  fileName?: string;
 }): ScamAnalysisResult => {
-  const { sourceType, subject = "", body } = payload;
-  const content = `${subject} ${body}`.toLowerCase(); // Combine and normalize for easier matching
+  const { subject = "", body } = payload;
+  const content = `${subject} ${body}`.toLowerCase();
 
-  // Default state for a legitimate message
   let detectedCategory = "Legitimate";
   let isScam = false;
   let confidence = 10 + Math.random() * 15;
@@ -529,17 +588,8 @@ const performScamAnalysis = (payload: {
     "Always be cautious, even if a message seems safe.",
     "Verify sender identities through a separate, trusted channel if unsure.",
   ];
-  let indicators: {
-    type: string;
-    description: string;
-    severity: "low" | "medium" | "high";
-    found: boolean;
-  }[] = [];
+  let indicators: ScamAnalysisResult["indicators"] = [];
 
-  // --- Simulate Detection Logic for Different Scam Types ---
-  // The order of these checks is crucial: from most specific to most general.
-
-  // 1. Advance-Fee / Lottery Scams (Very specific keywords)
   if (
     /won.*lottery|prize|claim.*your.*winnings|advance.*fee|processing.*charge|tax.*payment/.test(
       content
@@ -570,9 +620,7 @@ const performScamAnalysis = (payload: {
       "Do NOT send any money or personal information.",
       "Block the sender and delete the message.",
     ];
-  }
-  // 2. SIM Swap (Simjacking)
-  else if (
+  } else if (
     /sim.*swap|upgrade.*sim|4g|5g|deactivate.*sim|block.*your.*number/.test(
       content
     )
@@ -602,9 +650,7 @@ const performScamAnalysis = (payload: {
       "If you have concerns about your SIM, visit your mobile operator's official store in person.",
       "Contact your provider immediately if you lose service unexpectedly.",
     ];
-  }
-  // 3. Mobile Money (Telebirr) Fraud
-  else if (/telebirr|cbe birr|amole|otp|pin sent|ብር/.test(content)) {
+  } else if (/telebirr|cbe birr|amole|otp|pin sent|ብር/.test(content)) {
     isScam = true;
     detectedCategory = "Mobile Money (Telebirr) Fraud";
     riskLevel = "high";
@@ -636,9 +682,7 @@ const performScamAnalysis = (payload: {
       "Contact your bank or Telebirr support directly using their official number to verify.",
       "Delete this message immediately.",
     ];
-  }
-  // 4. Wangiri Fraud
-  else if (
+  } else if (
     /missed.*call from|call.*me.*back|urgent.*call/.test(content) &&
     /\+\d{3,}/.test(content)
   ) {
@@ -668,9 +712,7 @@ const performScamAnalysis = (payload: {
       "Do NOT call back international numbers you do not recognize.",
       "You will be charged high fees for the call. Block the number.",
     ];
-  }
-  // 5. Social Engineering (General PIN/Bank requests)
-  else if (
+  } else if (
     /ethio telecom|cbe|bank of abyssinia|dashen bank|your pin|account number/.test(
       content
     )
@@ -699,9 +741,7 @@ const performScamAnalysis = (payload: {
       "Your bank or Ethio Telecom will NEVER ask for your PIN via SMS.",
       "Do not reply. Contact the company using their official contact information to verify.",
     ];
-  }
-  // 6. Romance Scams
-  else if (
+  } else if (
     /lonely|love.*you|darling|my.*love|need.*help.*urgently|emergency|money.*for.*ticket|send me money/.test(
       content
     )
@@ -732,10 +772,8 @@ const performScamAnalysis = (payload: {
       "Never send money to someone you have not met in person.",
       "Perform a reverse image search on their profile pictures.",
     ];
-  }
-  // 7. Phishing (High-Urgency Email Subject)
-  else if (
-    sourceType === "email" &&
+  } else if (
+    payload.sourceType === "email" &&
     /urgent|action required|verify.*account|password|login|account.*suspended/.test(
       subject
     )
@@ -767,7 +805,6 @@ const performScamAnalysis = (payload: {
     ];
   }
 
-  // Add a final generic indicator check that applies to all messages
   indicators.push({
     type: "Contains a Link",
     description: "Includes a URL that could be malicious",
@@ -775,13 +812,11 @@ const performScamAnalysis = (payload: {
     found: /http:|https:/.test(content),
   });
 
-  // Clean up indicators that were not found in the final payload
   const finalIndicators = indicators.map((ind) => ({
     ...ind,
     found: ind.found || false,
   }));
 
-  // If no specific scam was detected but there are some weak indicators, classify as low-risk phishing
   if (
     !isScam &&
     /http:|https:/.test(content) &&

@@ -14,6 +14,9 @@ import {
   Eye,
   BrainCircuit,
   ShieldCheck,
+  Linkedin,
+  Github,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,10 +30,18 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import Link from "next/link";
 import { motion, useInView, animate } from "framer-motion";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
 
 // A reusable component for scroll-triggered animations
-function AnimatedSection({ children, className = "" }) {
+function AnimatedSection({
+  children,
+  className = "",
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 50 }}
@@ -45,12 +56,12 @@ function AnimatedSection({ children, className = "" }) {
 }
 
 // A reusable component for the animated number counter
-function Counter({ to }) {
-  const ref = useRef(null);
+function Counter({ to }: { to: number }) {
+  const ref = useRef<HTMLSpanElement | null>(null);
   const isInView = useInView(ref, { once: true });
 
   useEffect(() => {
-    if (isInView) {
+    if (isInView && ref.current) {
       animate(0, to, {
         duration: 2,
         onUpdate(value) {
@@ -66,6 +77,110 @@ function Counter({ to }) {
 }
 
 export default function HomePage() {
+  const [formState, setFormState] = useState({
+    name: "",
+    email: "",
+    subject: "",
+    message: "",
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { id, value } = e.target;
+    setFormState((prev) => ({ ...prev, [id]: value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    try {
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formState),
+      });
+
+      if (!response.ok) {
+        throw new Error("Server responded with an error.");
+      }
+
+      toast.success("Message Sent!", {
+        description: "Thank you for reaching out. We'll get back to you soon.",
+      });
+      setFormState({ name: "", email: "", subject: "", message: "" }); // Reset form
+    } catch (error) {
+      console.error("Submission error:", error);
+      toast.error("Failed to Send Message", {
+        description: "Please try again later or contact us directly.",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const teamMembers = [
+    {
+      name: "Aphran Mohammed",
+      role: "Lead AI Researcher",
+      bio: "Architecting the AI models that power our real-time scam detection engine.",
+      gender: "male",
+      expertise: ["AI/ML", "NLP", "Threat Intel"],
+      social: {
+        linkedin: "#",
+        github: "#",
+      },
+    },
+    {
+      name: "Nahom Bekele",
+      role: "Head of Engineering",
+      bio: "Leading the development of our robust and scalable infrastructure.",
+      gender: "male",
+      expertise: ["Backend", "DevOps", "System Arch"],
+      social: {
+        linkedin: "#",
+        github: "#",
+      },
+    },
+    {
+      name: "Dawit Addis",
+      role: "Cybersecurity Analyst",
+      bio: "Analyzing emerging threats and ensuring our defenses are always one step ahead.",
+      gender: "male",
+      expertise: ["Threat Analysis", "Forensics", "SOC"],
+      social: {
+        linkedin: "#",
+        github: "#",
+      },
+    },
+    {
+      name: "Meron Nisrane",
+      role: "Penetration Tester",
+      bio: "Proactively finding and fixing vulnerabilities to keep our platform secure.",
+      gender: "female",
+      expertise: ["Ethical Hacking", "Red Teaming", "Security Audits"],
+      social: {
+        linkedin: "#",
+        github: "#",
+      },
+    },
+    {
+      name: "Amanuel",
+      role: "Product Manager",
+      bio: "Defining the vision and roadmap to make cybersecurity accessible to everyone.",
+      gender: "male",
+      expertise: ["Product", "UX/UI", "Strategy"],
+      social: {
+        linkedin: "#",
+        github: "#",
+      },
+    },
+  ];
+
   return (
     <div className="min-h-screen bg-gray-50 text-gray-800">
       {/* Header */}
@@ -105,16 +220,15 @@ export default function HomePage() {
           </nav>
           <Link href="/analyze">
             <Button className="bg-blue-600 hover:bg-blue-700 shadow-md hover:shadow-lg transition-shadow">
-              Analyze Email
+              Analyze Scam
             </Button>
           </Link>
         </div>
       </header>
 
       <main>
-        {/* Hero Section - Visually Enhanced with Professional Font */}
+        {/* Hero Section */}
         <section className="relative font-sans py-24 md:py-32 px-4 bg-gradient-to-br from-blue-50 to-indigo-100 overflow-hidden">
-          {/* Animated blobs for a dynamic background */}
           <div className="absolute top-0 -left-4 w-72 h-72 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
           <div className="absolute top-0 -right-4 w-72 h-72 bg-blue-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
           <div className="absolute -bottom-8 left-20 w-72 h-72 bg-indigo-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
@@ -159,7 +273,7 @@ export default function HomePage() {
                       className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-8 py-6 text-lg transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-blue-500/40"
                     >
                       <Mail className="mr-2 h-5 w-5" />
-                      Analyze Email Now
+                      Analyze Scam Now
                     </Button>
                   </Link>
                   <Link href="#features">
@@ -176,6 +290,7 @@ export default function HomePage() {
             </motion.div>
           </div>
         </section>
+
         {/* Stats Section */}
         <section className="py-12 bg-gradient-to-r from-blue-50 to-indigo-50">
           <div className="container mx-auto px-4">
@@ -192,20 +307,24 @@ export default function HomePage() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {[
                   {
-                    value: "99.7%",
+                    value: 99.7,
                     label: "Detection Accuracy",
+                    suffix: "%",
                     icon: Shield,
                     color: "text-blue-600",
                   },
                   {
-                    value: "<1s",
+                    value: 1,
                     label: "Analysis Time",
+                    prefix: "<",
+                    suffix: "s",
                     icon: Mail,
                     color: "text-green-500",
                   },
                   {
-                    value: "1M+",
+                    value: 1000000,
                     label: "Emails Analyzed",
+                    suffix: "+",
                     icon: Users,
                     color: "text-purple-600",
                   },
@@ -219,7 +338,9 @@ export default function HomePage() {
                       <stat.icon className={`h-8 w-8 ${stat.color}`} />
                     </div>
                     <div className={`text-4xl font-bold ${stat.color} mb-1`}>
-                      {stat.value}
+                      {stat.prefix}
+                      <Counter to={stat.value} />
+                      {stat.suffix}
                     </div>
                     <div className="text-gray-600 text-sm md:text-base">
                       {stat.label}
@@ -230,6 +351,7 @@ export default function HomePage() {
             </AnimatedSection>
           </div>
         </section>
+
         {/* Features Section */}
         <section id="features" className="py-20 px-4 bg-slate-50">
           <div className="container mx-auto">
@@ -306,12 +428,11 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* About Us Section - Enhanced */}
+        {/* About Us Section */}
         <section
           id="about"
           className="py-24 md:py-32 bg-white relative overflow-hidden"
         >
-          {/* Subtle background dot pattern */}
           <div
             className="absolute inset-0 bg-[url('data:image/svg+xml,<svg_width=%2220%22_height=%2220%22_viewBox=%220_0_20_20%22_xmlns=%22http://www.w3.org/2000/svg%22><circle_fill=%22%23e2e8f0%22_cx=%2210%22_cy=%2210%22_r=%221%22/></svg>')] opacity-30"
             style={{ backgroundRepeat: "repeat" }}
@@ -323,7 +444,6 @@ export default function HomePage() {
                 <h2 className="text-3xl md:text-5xl font-extrabold text-blue-500 mb-4 tracking-tight">
                   Forging a Safer Digital Frontier
                 </h2>
-
                 <p className="text-md md:text-lg text-gray-600 max-w-2xl mx-auto">
                   At GuardSphere, we're not just building software; we're
                   building trust. Our mission is to democratize cybersecurity
@@ -334,7 +454,6 @@ export default function HomePage() {
             </AnimatedSection>
 
             <div className="lg:grid lg:grid-cols-2 lg:gap-10 lg:items-center">
-              {/* Left Column: Abstract Visual */}
               <AnimatedSection className="relative h-80 lg:h-auto mb-12 lg:mb-0">
                 <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-indigo-700 rounded-2xl shadow-2xl transform -rotate-2"></div>
                 <div className="relative h-full w-full p-6 flex items-center justify-center rounded-2xl bg-gray-900/20 backdrop-blur-lg border border-white/10">
@@ -370,7 +489,6 @@ export default function HomePage() {
                 </div>
               </AnimatedSection>
 
-              {/* Right Column: Core Values */}
               <AnimatedSection className="relative">
                 <div className="bg-white/90 backdrop-blur-md p-8 md:p-12 rounded-2xl shadow-xl border border-gray-200/50">
                   <h3 className="text-2xl md:text-3xl font-bold text-gray-800 mb-8">
@@ -423,13 +541,12 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* Testimonials Section - Updated */}
+        {/* Testimonials Section */}
         <section
           id="testimonials"
           className="py-24 bg-gradient-to-br from-white to-slate-100 relative"
         >
           <div className="container mx-auto px-4">
-            {/* Section Heading */}
             <AnimatedSection>
               <div className="text-center mb-16">
                 <h2 className="text-4xl md:text-5xl font-bold mb-4 tracking-tight text-blue-500">
@@ -445,7 +562,6 @@ export default function HomePage() {
               </div>
             </AnimatedSection>
 
-            {/* Testimonial Cards */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               {[
                 {
@@ -500,13 +616,13 @@ export default function HomePage() {
             </div>
           </div>
         </section>
-        {/* Team Section - Updated */}
+
+        {/* UPDATED Team Section */}
         <section
           id="team"
           className="py-24 bg-gradient-to-br from-white to-slate-50 relative"
         >
           <div className="container mx-auto px-4">
-            {/* Section Heading */}
             <AnimatedSection>
               <div className="text-center mb-16">
                 <h2 className="text-4xl md:text-5xl font-bold mb-4 tracking-tight text-blue-500">
@@ -516,38 +632,78 @@ export default function HomePage() {
                   <div className="w-24 h-1 bg-blue-500 rounded-full"></div>
                 </div>
                 <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-                  We are a passionate team of security researchers, AI
-                  specialists, and software engineers.
+                  The passionate minds dedicated to making Ethiopia safer
+                  online.
                 </p>
               </div>
             </AnimatedSection>
 
-            {/* Team Members Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8">
-              {[
-                { name: "Aphran Mohammed", role: "Lead AI Researcher" },
-                { name: "Nahom Bekele", role: "Head of Engineering" },
-                { name: "Dawit Addis", role: "Cybersecurity Analyst" },
-                { name: "Meron Nisrane", role: "Penetration Tester" },
-                { name: "Amanuel", role: "Product Manager" },
-              ].map((member, index) => (
-                <AnimatedSection key={index}>
+            <div className="flex flex-wrap justify-center gap-8">
+              {teamMembers.map((member, index) => (
+                <AnimatedSection
+                  key={index}
+                  className="w-full sm:w-2/5 lg:w-[30%]"
+                >
                   <motion.div
-                    whileHover={{ y: -5, scale: 1.03 }}
-                    transition={{ duration: 0.3 }}
+                    className="h-full"
+                    whileHover={{ y: -8 }}
+                    transition={{ type: "spring", stiffness: 300 }}
                   >
-                    <Card className="h-full flex flex-col items-center text-center shadow-xl rounded-2xl border border-gray-200 hover:shadow-2xl transition-transform bg-white/90 backdrop-blur-sm min-h-[350px] p-6">
-                      <img
-                        src={`https://i.pravatar.cc/150?u=${member.name}`}
-                        alt={member.name}
-                        className="w-28 h-28 rounded-full mb-4 border-4 border-blue-100 shadow-md"
-                      />
+                    <Card className="h-full flex flex-col text-center bg-white border border-gray-200 rounded-2xl p-6 group transition-all duration-300 hover:shadow-xl hover:border-blue-400">
+                      <div className="relative mb-4 self-center">
+                        <motion.div
+                          className="text-7xl mb-4"
+                          animate={{
+                            y: [0, -10, 0],
+                          }}
+                          transition={{
+                            duration: 3,
+                            ease: "easeInOut",
+                            repeat: Infinity,
+                            delay: index * 0.3,
+                          }}
+                        >
+                          {member.gender === "female" ? "👩‍💻" : "👨‍💻"}
+                        </motion.div>
+                      </div>
                       <CardTitle className="text-lg font-semibold text-gray-900">
                         {member.name}
                       </CardTitle>
-                      <CardDescription className="text-gray-600 mt-2">
+                      <CardDescription className="text-blue-600 font-medium mt-1">
                         {member.role}
                       </CardDescription>
+                      <CardContent className="p-0 mt-4 flex-grow">
+                        <p className="text-gray-500 text-sm">{member.bio}</p>
+                        <div className="mt-4 flex flex-wrap justify-center gap-2">
+                          {member.expertise.map((skill) => (
+                            <Badge
+                              key={skill}
+                              variant="secondary"
+                              className="bg-blue-100 text-blue-800"
+                            >
+                              {skill}
+                            </Badge>
+                          ))}
+                        </div>
+                      </CardContent>
+                      <div className="mt-6 flex justify-center gap-4 text-gray-400">
+                        <a
+                          href={member.social.linkedin}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="hover:text-blue-600"
+                        >
+                          <Linkedin size={20} />
+                        </a>
+                        <a
+                          href={member.social.github}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="hover:text-gray-900"
+                        >
+                          <Github size={20} />
+                        </a>
+                      </div>
                     </Card>
                   </motion.div>
                 </AnimatedSection>
@@ -556,18 +712,16 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* Contact Us Section - Enhanced Form */}
+        {/* CORRECTED Contact Us Section */}
         <section
           id="contact"
           className="py-24 bg-slate-50 relative overflow-hidden"
         >
-          {/* Decorative Background Circles */}
           <div className="absolute -top-32 -left-32 w-80 h-80 bg-blue-200 rounded-full opacity-20 blur-3xl animate-pulse"></div>
           <div className="absolute -bottom-32 -right-32 w-80 h-80 bg-indigo-200 rounded-full opacity-20 blur-3xl animate-pulse"></div>
 
           <div className="container mx-auto px-4 relative">
             <AnimatedSection>
-              {/* Section Heading */}
               <div className="text-center mb-16">
                 <h2 className="text-4xl md:text-5xl font-bold text-blue-500 mb-4 tracking-tight">
                   Get In Touch
@@ -578,87 +732,104 @@ export default function HomePage() {
                 </p>
               </div>
 
-              {/* Contact Form */}
               <div className="max-w-2xl mx-auto">
-                <Card className="shadow-2xl rounded-3xl border border-gray-100 overflow-hidden hover:shadow-3xl transition-shadow duration-500">
-                  <CardContent className="p-8 bg-white/90 backdrop-blur-md space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {/* Name Field */}
-                      <div className="relative">
-                        <Input
-                          id="name"
-                          placeholder=" "
-                          className="peer border-blue-300 focus:ring-blue-500 focus:border-blue-500 rounded-xl p-4 w-full"
-                        />
-                        <label
-                          htmlFor="name"
-                          className="absolute left-4 top-4 text-gray-400 text-sm transition-all peer-placeholder-shown:top-4 peer-placeholder-shown:text-gray-400 peer-placeholder-shown:text-base peer-focus:top-1 peer-focus:text-blue-500 peer-focus:text-sm"
-                        >
-                          Your Name
-                        </label>
+                <form onSubmit={handleSubmit}>
+                  <Card className="shadow-2xl rounded-3xl border border-gray-100 overflow-hidden hover:shadow-3xl transition-shadow duration-500">
+                    <CardContent className="p-8 bg-white/90 backdrop-blur-md">
+                      <div className="space-y-6">
+                        {/* Name Field */}
+                        <div className="relative group">
+                          <Input
+                            id="name"
+                            value={formState.name}
+                            onChange={handleInputChange}
+                            placeholder=" "
+                            className="peer border-gray-300 focus:ring-blue-500 focus:border-blue-500 rounded-xl p-4 w-full"
+                            required
+                          />
+                          <label
+                            htmlFor="name"
+                            className="absolute left-4 top-4 text-gray-500 transition-all duration-300 transform origin-left peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-3.5 peer-focus:text-blue-600 peer-[:not(:placeholder-shown)]:scale-75 peer-[:not(:placeholder-shown)]:-translate-y-3.5"
+                          >
+                            Your Name
+                          </label>
+                        </div>
+
+                        {/* Email Field */}
+                        <div className="relative group">
+                          <Input
+                            id="email"
+                            type="email"
+                            value={formState.email}
+                            onChange={handleInputChange}
+                            placeholder=" "
+                            className="peer border-gray-300 focus:ring-blue-500 focus:border-blue-500 rounded-xl p-4 w-full"
+                            required
+                          />
+                          <label
+                            htmlFor="email"
+                            className="absolute left-4 top-4 text-gray-500 transition-all duration-300 transform origin-left peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-3.5 peer-focus:text-blue-600 peer-[:not(:placeholder-shown)]:scale-75 peer-[:not(:placeholder-shown)]:-translate-y-3.5"
+                          >
+                            Your Email
+                          </label>
+                        </div>
+
+                        {/* Subject Field */}
+                        <div className="relative group">
+                          <Input
+                            id="subject"
+                            value={formState.subject}
+                            onChange={handleInputChange}
+                            placeholder=" "
+                            className="peer border-gray-300 focus:ring-blue-500 focus:border-blue-500 rounded-xl p-4 w-full"
+                            required
+                          />
+                          <label
+                            htmlFor="subject"
+                            className="absolute left-4 top-4 text-gray-500 transition-all duration-300 transform origin-left peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-3.5 peer-focus:text-blue-600 peer-[:not(:placeholder-shown)]:scale-75 peer-[:not(:placeholder-shown)]:-translate-y-3.5"
+                          >
+                            Subject
+                          </label>
+                        </div>
+
+                        {/* Message Field */}
+                        <div className="relative group">
+                          <Textarea
+                            id="message"
+                            rows={5}
+                            value={formState.message}
+                            onChange={handleInputChange}
+                            placeholder=" "
+                            className="peer border-gray-300 focus:ring-blue-500 focus:border-blue-500 rounded-xl p-4 w-full resize-none"
+                            required
+                          />
+                          <label
+                            htmlFor="message"
+                            className="absolute left-4 top-4 text-gray-500 transition-all duration-300 transform origin-left peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-3.5 peer-focus:text-blue-600 peer-[:not(:placeholder-shown)]:scale-75 peer-[:not(:placeholder-shown)]:-translate-y-3.5"
+                          >
+                            Your Message
+                          </label>
+                        </div>
                       </div>
 
-                      {/* Email Field */}
-                      <div className="relative">
-                        <Input
-                          id="email"
-                          type="email"
-                          placeholder=" "
-                          className="peer border-blue-300 focus:ring-blue-500 focus:border-blue-500 rounded-xl p-4 w-full"
-                        />
-                        <label
-                          htmlFor="email"
-                          className="absolute left-4 top-4 text-gray-400 text-sm transition-all peer-placeholder-shown:top-4 peer-placeholder-shown:text-gray-400 peer-placeholder-shown:text-base peer-focus:top-1 peer-focus:text-blue-500 peer-focus:text-sm"
+                      {/* Submit Button */}
+                      <div className="flex justify-center mt-8">
+                        <Button
+                          type="submit"
+                          disabled={isSubmitting}
+                          className="w-auto px-8 py-3 bg-blue-500 hover:bg-blue-600 text-white font-semibold text-base transition-all duration-300 hover:scale-105 flex items-center justify-center gap-2 rounded-lg shadow-md hover:shadow-lg disabled:bg-blue-400 disabled:cursor-not-allowed"
                         >
-                          Your Email
-                        </label>
+                          {isSubmitting ? (
+                            <Loader2 className="h-5 w-5 animate-spin" />
+                          ) : (
+                            <Send className="h-4 w-4" />
+                          )}
+                          {isSubmitting ? "Sending..." : "Send Message"}
+                        </Button>
                       </div>
-                    </div>
-
-                    {/* Subject Field */}
-                    <div className="relative">
-                      <Input
-                        id="subject"
-                        placeholder=" "
-                        className="peer border-blue-300 focus:ring-blue-500 focus:border-blue-500 rounded-xl p-4 w-full"
-                      />
-                      <label
-                        htmlFor="subject"
-                        className="absolute left-4 top-4 text-gray-400 text-sm transition-all peer-placeholder-shown:top-4 peer-placeholder-shown:text-gray-400 peer-placeholder-shown:text-base peer-focus:top-1 peer-focus:text-blue-500 peer-focus:text-sm"
-                      >
-                        Subject
-                      </label>
-                    </div>
-
-                    {/* Message Field */}
-                    <div className="relative">
-                      <Textarea
-                        id="message"
-                        rows={5}
-                        placeholder=" "
-                        className="peer border-blue-300 focus:ring-blue-500 focus:border-blue-500 rounded-xl p-4 w-full resize-none"
-                      />
-                      <label
-                        htmlFor="message"
-                        className="absolute left-4 top-4 text-gray-400 text-sm transition-all peer-placeholder-shown:top-4 peer-placeholder-shown:text-gray-400 peer-placeholder-shown:text-base peer-focus:top-1 peer-focus:text-blue-500 peer-focus:text-sm"
-                      >
-                        Your Message
-                      </label>
-                    </div>
-
-                    {/* Submit Button */}
-                    {/* Submit Button */}
-                    <div className="flex justify-center mt-4">
-                      <Button
-                        size="md"
-                        className="w-auto px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white font-semibold text-base transition-transform hover:scale-105 flex items-center justify-center gap-2 rounded-lg shadow-md hover:shadow-lg"
-                      >
-                        <Send className="h-4 w-4" />
-                        Send Message
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
+                    </CardContent>
+                  </Card>
+                </form>
               </div>
             </AnimatedSection>
           </div>
@@ -727,6 +898,8 @@ export default function HomePage() {
                   <Link href="#" className="hover:text-white transition-colors">
                     Terms of Service
                   </Link>
+                </li>
+                <li>
                   <Link
                     href="/admin"
                     className="hover:text-white transition-colors text-xs opacity-60"
@@ -741,19 +914,29 @@ export default function HomePage() {
               <p className="text-gray-400 mb-4">
                 Get the latest cybersecurity news and product updates.
               </p>
-              <div className="flex">
-                <Input
-                  type="email"
-                  placeholder="Enter your email"
-                  className="bg-gray-800 border-gray-700 rounded-r-none text-white"
-                />
-                <Button
-                  type="submit"
-                  className="bg-blue-600 hover:bg-blue-700 rounded-l-none"
-                >
-                  Go
-                </Button>
-              </div>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  toast.success("Subscribed!", {
+                    description: "You're now on our mailing list.",
+                  });
+                }}
+              >
+                <div className="flex">
+                  <Input
+                    type="email"
+                    placeholder="Enter your email"
+                    className="bg-gray-800 border-gray-700 rounded-r-none text-white"
+                    required
+                  />
+                  <Button
+                    type="submit"
+                    className="bg-blue-600 hover:bg-blue-700 rounded-l-none"
+                  >
+                    Go
+                  </Button>
+                </div>
+              </form>
             </div>
           </div>
           <div className="border-t border-gray-800 pt-8 text-center text-gray-500">
