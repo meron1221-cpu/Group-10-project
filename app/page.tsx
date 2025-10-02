@@ -19,6 +19,9 @@ import {
   Sun,
   Moon,
   Languages,
+  MessageSquareQuote,
+  FileImage,
+  Trophy,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,18 +31,95 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import Link from "next/link";
+import Image from "next/image";
 import { motion, useInView, animate } from "framer-motion";
 import { useEffect, useRef, useState, createContext, useContext } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 
-// --- i18n & THEME CONTEXT ---
+// --- i18n & THEME & SCAM REPORT CONTEXT ---
 
 const translations = {
   en: {
+    // New Recent Scams Section
+    recentScamsTitle: "Recent Community Reports",
+    recentScamsSubtitle:
+      "The latest threats reported by the community. Stay informed, stay safe.",
+    noRecentScams: "No new scams have been reported recently.",
+    beTheFirst: "Be the first to report one!",
+    moreScams: "more",
+    allRecentScams: "All Recent Scams (Last 48 Hours)",
+    // New Scam Report Section
+    reportScamTitle: "Report a Scam",
+    reportScamSubtitle:
+      "Help protect the community by sharing details of a scam you've encountered.",
+    scamType: "Type of Scam",
+    scamDescription: "Describe the Scam",
+    scamScreenshot: "Upload Screenshot (Optional)",
+    scamScreenshotHelper: "A picture of the message, email, or website.",
+    submitReport: "Submit Anonymously",
+    noFileChosen: "No file chosen",
+    // Testimonials
+    testimonial1Quote:
+      "GuardSphere is a game-changer. It caught a sophisticated phishing email that our traditional filters missed. Highly recommended!",
+    testimonial1Name: "Sarah L.",
+    testimonial1Role: "IT Manager, TechCorp",
+    testimonial2Quote:
+      "The peace of mind this tool provides is invaluable. The analysis is fast, accurate, and easy to understand.",
+    testimonial2Name: "Michael B.",
+    testimonial2Role: "Small Business Owner",
+    testimonial3Quote:
+      "As a freelance developer, I handle sensitive client data. GuardSphere is my first line of defense. Simple, powerful, and effective.",
+    testimonial3Name: "Jessica P.",
+    testimonial3Role: "Freelance Developer",
+    // Team Members
+    teamMember1Name: "Aphran Mohammed",
+    teamMember1Role: "Lead AI Researcher",
+    teamMember1Bio:
+      "Architecting the AI models that power our real-time scam detection engine.",
+    teamMember2Name: "Nahom Michael",
+    teamMember2Role: "Head of Engineering",
+    teamMember2Bio:
+      "Leading the development of our robust and scalable infrastructure.",
+    teamMember3Name: "Dawit Addis",
+    teamMember3Role: "Cybersecurity Analyst",
+    teamMember3Bio:
+      "Analyzing emerging threats and ensuring our defenses are always one step ahead.",
+    teamMember4Name: "Meron Nisrane",
+    teamMember4Role: "Penetration Tester",
+    teamMember4Bio:
+      "Proactively finding and fixing vulnerabilities to keep our platform secure.",
+    teamMember5Name: "Amanuel",
+    teamMember5Role: "Product Manager",
+    teamMember5Bio:
+      "Defining the vision and roadmap to make cybersecurity accessible to everyone.",
+    // Scam Types
+    scamTypePhishing: "Phishing",
+    scamTypeInvestment: "Investment Fraud",
+    scamTypeJob: "Fake Job Offer",
+    scamTypeBank: "Bank Impersonation",
+    scamTypeLottery: "Lottery Scam",
+    scamTypeTech: "Tech Support Scam",
+    scamTypeOther: "Other",
+    // Existing translations...
     features: "Features",
     aboutUs: "About Us",
     team: "Team",
@@ -118,6 +198,60 @@ const translations = {
     copyright: "GuardSphere. All rights reserved.",
   },
   am: {
+    // New Recent Scams Section
+    recentScamsTitle: "የቅርብ ጊዜ የማህበረሰብ ሪፖርቶች",
+    recentScamsSubtitle: "በማህበረሰቡ የተዘገቡ የቅርብ ጊዜ ስጋቶች። መረጃ ይኑርዎት፣ ደህንነትዎን ይጠብቁ።",
+    noRecentScams: "በቅርብ ጊዜ የተዘገበ አዲስ ማጭበርበር የለም።",
+    beTheFirst: "ሪፖርት በማድረግ የመጀመሪያው ይሁኑ!",
+    moreScams: "ተጨማሪ",
+    allRecentScams: "ሁሉም የቅርብ ጊዜ ማጭበርበሮች (ያለፉት 48 ሰዓታት)",
+    // New Scam Report Section
+    reportScamTitle: "ማጭበርበርን ሪፖርት አድርግ",
+    reportScamSubtitle: "ያጋጠመዎትን የማጭበርበር ዝርዝር በማጋራት ማህበረሰቡን ለመጠበቅ ይረዱ።",
+    scamType: "የማጭበርበር አይነት",
+    scamDescription: "ማጭበርበሩን ይግለጹ",
+    scamScreenshot: "ቅጽበታዊ ገጽ እይታ ስቀል (አማራጭ)",
+    scamScreenshotHelper: "የመልዕክቱ፣ የኢሜይሉ ወይም የድረ-ገጹ ምስል።",
+    submitReport: "ስም-አልባ አስገባ",
+    noFileChosen: "ምንም ፋይል አልተመረጠም",
+    // Testimonials
+    testimonial1Quote:
+      "GuardSphere በጣም አስደናቂ ነው። ባህላዊ ማጣሪያዎቻችን ያመለጡትን የተራቀቀ የማስገር ኢሜይል ይዞታል። በጣም ይመከራል!",
+    testimonial1Name: "ሣራ ኤል.",
+    testimonial1Role: "የ IT ሥራ አስኪያጅ, TechCorp",
+    testimonial2Quote:
+      "ይህ መሳሪያ የሚሰጠው የአእምሮ ሰላም неоціненний ነው። ትንታኔው ፈጣን፣ ትክክለኛ እና ለመረዳት ቀላል ነው።",
+    testimonial2Name: "ሚካኤል ቢ.",
+    testimonial2Role: "የአነስተኛ ንግድ ባለቤት",
+    testimonial3Quote:
+      "እንደ ፍሪላንስ ገንቢ፣ ሚስጥራዊ የደንበኛ መረጃዎችን እይዛለሁ። GuardSphere የመጀመሪያው የመከላከያ መስመሬ ነው። ቀላል፣ ኃይለኛ እና ውጤታማ።",
+    testimonial3Name: "ጄሲካ ፒ.",
+    testimonial3Role: "ፍሪላንስ ገንቢ",
+    // Team Members
+    teamMember1Name: "አፍራን መሐመድ",
+    teamMember1Role: "የ AI ምርምር መሪ",
+    teamMember1Bio: "የእኛን የእውነተኛ ጊዜ የማጭበርበር መለያ ሞዴሎችን መንደፍ።",
+    teamMember2Name: "ናሆም ሚካኤል",
+    teamMember2Role: "የምህንድስና ክፍል ኃላፊ",
+    teamMember2Bio: "ጠንካራ እና አስተማማኝ መሰረተ ልማታችንን መገንባትን መምራት።",
+    teamMember3Name: "ዳዊት አዲስ",
+    teamMember3Role: "የሳይበር ደህንነት ተንታኝ",
+    teamMember3Bio: "አዳዲስ ስጋቶችን መተንተን እና መከላከያዎቻችን አንድ እርምጃ ቀድመው እንዲገኙ ማድረግ።",
+    teamMember4Name: "ሜሮን ንስራኔ",
+    teamMember4Role: "የስርዓት ஊடுருவல் ሞካሪ",
+    teamMember4Bio: "የስርዓታችንን ደህንነት ለመጠበቅ ተጋላጭነቶችን በንቃት መፈለግ እና ማስተካከል።",
+    teamMember5Name: "አማኑኤል",
+    teamMember5Role: "የምርት ሥራ አስኪያጅ",
+    teamMember5Bio: "የሳይበር ደህንነትን ለሁሉም ተደራሽ ለማድረግ ራዕይን እና ፍኖተ ካርታን መወሰን።",
+    // Scam Types
+    scamTypePhishing: "ማስገር (Phishing)",
+    scamTypeInvestment: "የኢንቨስትመንት ማጭበርበር",
+    scamTypeJob: "የውሸት ሥራ ማስታወቂያ",
+    scamTypeBank: "የባንክ ስም በመጠቀም ማጭበርበር",
+    scamTypeLottery: "የሎተሪ ማጭበርበር",
+    scamTypeTech: "የቴክኒክ ድጋፍ ማጭበርበር",
+    scamTypeOther: "ሌላ",
+    // Existing translations...
     features: "ባህሪያት",
     aboutUs: "ስለ እኛ",
     team: "ቡድን",
@@ -187,6 +321,7 @@ const translations = {
   },
 };
 
+// --- App Context (Theme & Language) ---
 type AppContextType = {
   theme: "light" | "dark";
   setTheme: (theme: "light" | "dark") => void;
@@ -204,6 +339,69 @@ const useAppContext = () => {
   }
   return context;
 };
+
+// --- Recent Scams Context ---
+interface ScamReport {
+  id: number;
+  scamType: string;
+  description: string;
+  screenshotUrl?: string;
+  timestamp: number;
+}
+
+type ScamContextType = {
+  recentScams: ScamReport[];
+  addScamReport: (scam: Omit<ScamReport, "id" | "timestamp">) => void;
+};
+
+const ScamContext = createContext<ScamContextType | null>(null);
+
+const useScam = () => {
+  const context = useContext(ScamContext);
+  if (!context) {
+    throw new Error("useScam must be used within a ScamProvider");
+  }
+  return context;
+};
+
+function ScamProvider({ children }: { children: React.ReactNode }) {
+  const [recentScams, setRecentScams] = useState<ScamReport[]>([]);
+
+  useEffect(() => {
+    try {
+      const storedScams = localStorage.getItem("recentScams");
+      if (storedScams) {
+        const allScams: ScamReport[] = JSON.parse(storedScams);
+        const twoDays = 48 * 60 * 60 * 1000;
+        const freshScams = allScams.filter(
+          (scam) => Date.now() - scam.timestamp < twoDays
+        );
+        setRecentScams(freshScams);
+      }
+    } catch (err) {
+      console.error("Failed to load recent scams from localStorage", err);
+    }
+  }, []);
+
+  const addScamReport = (scam: Omit<ScamReport, "id" | "timestamp">) => {
+    const newScam = { ...scam, id: Date.now(), timestamp: Date.now() };
+    setRecentScams((prevScams) => {
+      const updatedScams = [newScam, ...prevScams];
+      try {
+        localStorage.setItem("recentScams", JSON.stringify(updatedScams));
+      } catch (err) {
+        console.error("Failed to save recent scams to localStorage", err);
+      }
+      return updatedScams;
+    });
+  };
+
+  return (
+    <ScamContext.Provider value={{ recentScams, addScamReport }}>
+      {children}
+    </ScamContext.Provider>
+  );
+}
 
 function AppProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<"light" | "dark">("light");
@@ -240,7 +438,7 @@ function AppProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AppContext.Provider value={{ theme, setTheme, language, setLanguage, t }}>
-      {children}
+      <ScamProvider>{children}</ScamProvider>
     </AppContext.Provider>
   );
 }
@@ -495,6 +693,163 @@ function StatsSection() {
   );
 }
 
+// --- REFACTORED: Recent Scams Section ---
+
+// A smaller card component for use inside the dialog
+function DialogScamCard({ scam }: { scam: ScamReport }) {
+  return (
+    <div className="flex items-start gap-4 p-4 border-b dark:border-gray-700">
+      {scam.screenshotUrl && (
+        <Image
+          src={scam.screenshotUrl}
+          alt="Scam screenshot"
+          width={100}
+          height={100}
+          className="rounded-md border dark:border-gray-600 object-cover"
+        />
+      )}
+      <div className="flex-1">
+        <Badge variant="destructive">{scam.scamType}</Badge>
+        <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
+          {scam.description}
+        </p>
+        <p className="mt-1 text-xs text-gray-400">
+          {new Date(scam.timestamp).toLocaleString()}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// The card for displaying a single scam in the main grid
+function ScamCard({ scam }: { scam: ScamReport }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.5 }}
+      className="h-full"
+    >
+      <Card className="h-full flex flex-col overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 dark:bg-gray-800/50">
+        {scam.screenshotUrl && (
+          <div className="relative w-full h-40">
+            <Image
+              src={scam.screenshotUrl}
+              alt="Scam screenshot"
+              layout="fill"
+              objectFit="cover"
+            />
+          </div>
+        )}
+        <CardHeader>
+          <Badge variant="destructive" className="w-fit">
+            {scam.scamType}
+          </Badge>
+        </CardHeader>
+        <CardContent className="flex-grow">
+          <p className="text-gray-600 dark:text-gray-300 line-clamp-3">
+            {scam.description}
+          </p>
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
+}
+
+// The special card for showing "+N more"
+function MoreScamsCard({
+  count,
+  onClick,
+}: {
+  count: number;
+  onClick: () => void;
+}) {
+  const { t } = useAppContext();
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.5, delay: 0.2 }}
+      className="h-full"
+    >
+      <Card
+        onClick={onClick}
+        className="h-full flex flex-col items-center justify-center text-center p-6 border-2 border-dashed hover:border-solid hover:border-blue-500 dark:hover:border-blue-400 bg-slate-50 dark:bg-gray-800/30 cursor-pointer transition-all duration-300"
+      >
+        <CardTitle className="text-4xl font-bold text-blue-500 dark:text-blue-400">
+          +{count}
+        </CardTitle>
+        <CardDescription>{t("moreScams")}</CardDescription>
+      </Card>
+    </motion.div>
+  );
+}
+
+function RecentScamsSection() {
+  const { t } = useAppContext();
+  const { recentScams } = useScam();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  const displayScams = recentScams.slice(0, 3);
+  const remainingCount = recentScams.length > 3 ? recentScams.length - 2 : 0;
+
+  return (
+    <section className="py-24 bg-white dark:bg-gray-900">
+      <div className="container mx-auto px-4">
+        <AnimatedSection>
+          <div className="text-center mb-12">
+            <h2 className="text-4xl md:text-5xl font-bold mb-4 tracking-tight text-blue-500 dark:text-blue-400">
+              {t("recentScamsTitle")}
+            </h2>
+            <p className="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
+              {t("recentScamsSubtitle")}
+            </p>
+          </div>
+
+          {recentScams.length === 0 ? (
+            <div className="text-center py-12 border-2 border-dashed rounded-lg">
+              <p className="text-lg text-gray-500 dark:text-gray-400">
+                {t("noRecentScams")}
+              </p>
+              <p className="font-semibold text-blue-500 dark:text-blue-400 mt-2">
+                {t("beTheFirst")}
+              </p>
+            </div>
+          ) : (
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {displayScams.map((scam, index) => {
+                  if (index === 2 && recentScams.length > 3) {
+                    return (
+                      <DialogTrigger asChild key="more-trigger">
+                        <MoreScamsCard
+                          count={remainingCount}
+                          onClick={() => setIsDialogOpen(true)}
+                        />
+                      </DialogTrigger>
+                    );
+                  }
+                  return <ScamCard key={scam.id} scam={scam} />;
+                })}
+              </div>
+              <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
+                <DialogHeader>
+                  <DialogTitle>{t("allRecentScams")}</DialogTitle>
+                </DialogHeader>
+                <div className="flex-grow overflow-y-auto">
+                  {recentScams.map((scam) => (
+                    <DialogScamCard key={scam.id} scam={scam} />
+                  ))}
+                </div>
+              </DialogContent>
+            </Dialog>
+          )}
+        </AnimatedSection>
+      </div>
+    </section>
+  );
+}
+
 function FeaturesSection() {
   const { t } = useAppContext();
   const features = [
@@ -663,22 +1018,19 @@ function TestimonialsSection() {
   const { t } = useAppContext();
   const testimonials = [
     {
-      quote:
-        "GuardSphere is a game-changer. It caught a sophisticated phishing email that our traditional filters missed. Highly recommended!",
-      name: "Sarah L.",
-      role: "IT Manager, TechCorp",
+      quote: t("testimonial1Quote"),
+      name: t("testimonial1Name"),
+      role: t("testimonial1Role"),
     },
     {
-      quote:
-        "The peace of mind this tool provides is invaluable. The analysis is fast, accurate, and easy to understand.",
-      name: "Michael B.",
-      role: "Small Business Owner",
+      quote: t("testimonial2Quote"),
+      name: t("testimonial2Name"),
+      role: t("testimonial2Role"),
     },
     {
-      quote:
-        "As a freelance developer, I handle sensitive client data. GuardSphere is my first line of defense. Simple, powerful, and effective.",
-      name: "Jessica P.",
-      role: "Freelance Developer",
+      quote: t("testimonial3Quote"),
+      name: t("testimonial3Name"),
+      role: t("testimonial3Role"),
     },
   ];
 
@@ -737,37 +1089,212 @@ function TestimonialsSection() {
   );
 }
 
+// --- UPDATED: PROFESSIONAL REPORT SCAM FORM SECTION ---
+function ReportScamSection() {
+  const { t } = useAppContext();
+  const { addScamReport } = useScam();
+  const [scamType, setScamType] = useState("Phishing");
+  const [description, setDescription] = useState("");
+  const [screenshot, setScreenshot] = useState<File | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const scamTypes = [
+    { value: "Phishing", labelKey: "scamTypePhishing" },
+    { value: "Investment Fraud", labelKey: "scamTypeInvestment" },
+    { value: "Fake Job Offer", labelKey: "scamTypeJob" },
+    { value: "Bank Impersonation", labelKey: "scamTypeBank" },
+    { value: "Lottery Scam", labelKey: "scamTypeLottery" },
+    { value: "Tech Support Scam", labelKey: "scamTypeTech" },
+    { value: "Other", labelKey: "scamTypeOther" },
+  ];
+
+  // Helper to convert file to base64
+  const fileToBase64 = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = (error) => reject(error);
+    });
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("File is too large. Please upload an image under 5MB.");
+        return;
+      }
+      setScreenshot(file);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!description.trim()) {
+      toast.error("Please provide a description for the scam.");
+      return;
+    }
+    setIsSubmitting(true);
+
+    let screenshotUrl: string | undefined = undefined;
+    if (screenshot) {
+      try {
+        screenshotUrl = await fileToBase64(screenshot);
+      } catch (error) {
+        console.error("Error converting file to base64", error);
+        toast.error("Could not process the image. Please try another one.");
+        setIsSubmitting(false);
+        return;
+      }
+    }
+
+    addScamReport({ scamType, description, screenshotUrl });
+
+    toast.success("Thank you! Your report has been submitted.", {
+      description: "Your contribution helps keep the community safe.",
+    });
+
+    // Reset form state
+    setDescription("");
+    setScamType("Phishing");
+    setScreenshot(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+    setIsSubmitting(false);
+  };
+
+  return (
+    <section
+      id="report-scam"
+      className="py-24 bg-slate-100 dark:bg-gray-900/50"
+    >
+      <div className="container mx-auto px-4">
+        <AnimatedSection>
+          <div className="max-w-3xl mx-auto">
+            <Card className="dark:bg-gray-800/50 dark:border-gray-700 p-8 shadow-lg rounded-2xl">
+              <CardHeader className="text-center p-0 mb-8">
+                <CardTitle className="text-3xl md:text-4xl font-bold">
+                  {t("reportScamTitle")}
+                </CardTitle>
+                <CardDescription className="text-lg">
+                  {t("reportScamSubtitle")}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-0">
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="scamType">{t("scamType")}</Label>
+                      <Select value={scamType} onValueChange={setScamType}>
+                        <SelectTrigger id="scamType">
+                          <SelectValue placeholder="Select a type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {scamTypes.map((type) => (
+                            <SelectItem key={type.value} value={type.value}>
+                              {t(type.labelKey as keyof typeof translations.en)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="screenshot">{t("scamScreenshot")}</Label>
+                      <div className="flex items-center gap-4">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => fileInputRef.current?.click()}
+                        >
+                          <FileImage className="mr-2 h-4 w-4" />
+                          Choose File
+                        </Button>
+                        <span className="text-sm text-gray-500 truncate">
+                          {screenshot?.name || t("noFileChosen")}
+                        </span>
+                      </div>
+                      <Input
+                        id="screenshot"
+                        type="file"
+                        ref={fileInputRef}
+                        className="hidden"
+                        onChange={handleFileChange}
+                        accept="image/png, image/jpeg, image/gif"
+                      />
+                      <p className="text-xs text-gray-500">
+                        {t("scamScreenshotHelper")}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="description">{t("scamDescription")}</Label>
+                    <Textarea
+                      id="description"
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      placeholder="e.g., 'Received a text from +251... saying I won a prize and needed to click a link...'"
+                      rows={5}
+                      required
+                    />
+                  </div>
+                  <div className="flex justify-center">
+                    <Button
+                      type="submit"
+                      className="w-full md:w-auto" // Button is smaller on larger screens
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <MessageSquareQuote className="mr-2 h-4 w-4" />
+                      )}
+                      {isSubmitting ? t("sending") : t("submitReport")}
+                    </Button>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
+          </div>
+        </AnimatedSection>
+      </div>
+    </section>
+  );
+}
+
 function TeamSection() {
   const { t } = useAppContext();
   const teamMembers = [
     {
-      name: "Aphran Mohammed",
-      role: "Lead AI Researcher",
-      bio: "Architecting the AI models that power our real-time scam detection engine.",
+      name: t("teamMember1Name"),
+      role: t("teamMember1Role"),
+      bio: t("teamMember1Bio"),
       gender: "male",
       expertise: ["AI/ML", "NLP"],
       social: { linkedin: "#", github: "#" },
     },
     {
-      name: "Nahom Michael",
-      role: "Head of Engineering",
-      bio: "Leading the development of our robust and scalable infrastructure.",
+      name: t("teamMember2Name"),
+      role: t("teamMember2Role"),
+      bio: t("teamMember2Bio"),
       gender: "male",
       expertise: ["Backend", "penetration tester"],
       social: { linkedin: "#", github: "#" },
     },
     {
-      name: "Dawit Addis",
-      role: "Cybersecurity Analyst",
-      bio: "Analyzing emerging threats and ensuring our defenses are always one step ahead.",
+      name: t("teamMember3Name"),
+      role: t("teamMember3Role"),
+      bio: t("teamMember3Bio"),
       gender: "male",
       expertise: ["Threat Analysis", "SOC"],
       social: { linkedin: "#", github: "#" },
     },
     {
-      name: "Meron Nisrane",
-      role: "Penetration Tester",
-      bio: "Proactively finding and fixing vulnerabilities to keep our platform secure.",
+      name: t("teamMember4Name"),
+      role: t("teamMember4Role"),
+      bio: t("teamMember4Bio"),
       gender: "female",
       expertise: ["Ethical Hacking", "Security Audits"],
       social: {
@@ -776,9 +1303,9 @@ function TeamSection() {
       },
     },
     {
-      name: "Amanuel",
-      role: "Product Manager",
-      bio: "Defining the vision and roadmap to make cybersecurity accessible to everyone.",
+      name: t("teamMember5Name"),
+      role: t("teamMember5Role"),
+      bio: t("teamMember5Bio"),
       gender: "male",
       expertise: ["Product", "UX/UI"],
       social: { linkedin: "#", github: "#" },
@@ -1151,9 +1678,11 @@ function HomePageContent() {
       <main>
         <HeroSection />
         <StatsSection />
+        <RecentScamsSection />
         <FeaturesSection />
         <AboutSection />
         <TestimonialsSection />
+        <ReportScamSection />
         <TeamSection />
         <ContactSection />
       </main>
