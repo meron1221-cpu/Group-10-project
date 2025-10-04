@@ -9,6 +9,7 @@ interface User {
   id: string;
   email: string;
   hashedPassword?: string;
+  points?: number; // <--- ADDED THIS LINE for gamification
 }
 
 interface Database {
@@ -40,8 +41,31 @@ export function findUserByEmail(email: string): User | undefined {
 
 export function createUser(newUser: Omit<User, "id">): User {
   const db = readDB();
-  const user = { ...newUser, id: `user-${Date.now()}` };
+  // Initialize points for new users
+  const user = { ...newUser, id: `user-${Date.now()}`, points: 0 }; // <--- INITIALIZE POINTS
   db.users.push(user);
   writeDB(db);
   return user;
+}
+
+// --- NEW: Function to update user points ---
+export function updateUserPoints(
+  userId: string,
+  pointsToAdd: number
+): User | undefined {
+  const db = readDB();
+  const userIndex = db.users.findIndex((user) => user.id === userId);
+  if (userIndex > -1) {
+    db.users[userIndex].points =
+      (db.users[userIndex].points || 0) + pointsToAdd;
+    writeDB(db);
+    return db.users[userIndex];
+  }
+  return undefined;
+}
+
+// --- NEW: Function to get all users (for leaderboard) ---
+export function getAllUsers(): User[] {
+  const db = readDB();
+  return db.users;
 }

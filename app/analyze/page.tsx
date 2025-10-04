@@ -34,6 +34,13 @@ import { Progress } from "@/components/ui/progress";
 import Link from "next/link";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { motion, useInView, animate } from "framer-motion";
+import { Orbitron } from "next/font/google";
+
+// --- FONT SETUP ---
+const orbitron = Orbitron({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800", "900"],
+});
 
 // --- INTERFACES ---
 interface ScamAnalysisResult {
@@ -519,7 +526,7 @@ export default function AnalyzePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className={`min-h-screen bg-gray-50 ${orbitron.className}`}>
       <header className="sticky top-0 z-10 border-b bg-white/80 backdrop-blur-sm">
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
           <Link

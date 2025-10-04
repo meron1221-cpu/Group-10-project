@@ -1,3 +1,10 @@
 {
-  "users": []
+  "users": [
+    {
+      "email": "meronnisrane@gmail.com",
+      "hashedPassword": "$2b$12$UQf2RxOF3h4LFYd6Fw7kCOxZW4KhqpUg4ATz31v3irWPYym.dKmBq",
+      "id": "user-1759581798942",
+      "points": 0
+    }
+  ]
 }

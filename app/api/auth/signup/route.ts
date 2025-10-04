@@ -8,19 +8,29 @@ export async function POST(request: Request) {
     const { email, password, confirmPassword } = body;
 
     if (!email || !password || !confirmPassword) {
-      return new NextResponse("Missing fields", { status: 400 });
+      // FIX: Return a JSON object for the error
+      return NextResponse.json(
+        { message: "Missing required fields." },
+        { status: 400 }
+      );
     }
 
     if (password !== confirmPassword) {
-      return new NextResponse("Passwords do not match", { status: 400 });
+      // FIX: Return a JSON object for the error
+      return NextResponse.json(
+        { message: "Passwords do not match." },
+        { status: 400 }
+      );
     }
 
     // Check if the user already exists in our mock DB
     const existingUser = findUserByEmail(email);
     if (existingUser) {
-      return new NextResponse("User with this email already exists", {
-        status: 409,
-      });
+      // FIX: Return a JSON object for the error
+      return NextResponse.json(
+        { message: "User with this email already exists." },
+        { status: 409 } // 409 Conflict is more appropriate here
+      );
     }
 
     const hashedPassword = await bcrypt.hash(password, 12);
@@ -31,9 +41,14 @@ export async function POST(request: Request) {
       hashedPassword,
     });
 
-    return NextResponse.json(user);
+    // Return the created user object as JSON on success
+    return NextResponse.json(user, { status: 201 });
   } catch (error) {
     console.error("SIGNUP_ERROR", error);
-    return new NextResponse("Internal Server Error", { status: 500 });
+    // FIX: Return a JSON object for server errors
+    return NextResponse.json(
+      { message: "Internal Server Error" },
+      { status: 500 }
+    );
   }
 }

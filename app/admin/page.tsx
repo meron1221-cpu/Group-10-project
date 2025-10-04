@@ -1,5 +1,6 @@
 "use client";
 
+import { Orbitron } from "next/font/google";
 import { useState, useEffect, useMemo, createContext, useContext } from "react";
 import { format } from "date-fns";
 import { DateRange } from "react-day-picker";
@@ -108,6 +109,12 @@ import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { AnalyticsChart } from "./components/analytics-chart";
+
+// --- FONT SETUP ---
+const orbitron = Orbitron({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800", "900"],
+});
 
 // --- i18n & SETTINGS ---
 
@@ -449,7 +456,9 @@ function LoginPage({ onLoginSuccess }: { onLoginSuccess: () => void }) {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-100 font-sans p-4">
+    <div
+      className={`min-h-screen flex items-center justify-center bg-slate-100 p-4 ${orbitron.className}`}
+    >
       <Card className="w-full max-w-sm shadow-2xl animate-in fade-in-50 duration-500">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4 flex items-center justify-center h-16 w-16 bg-blue-100 rounded-full">
@@ -1578,7 +1587,7 @@ function ThreatMapView() {
                 <text
                   textAnchor="middle"
                   y={-10}
-                  className="text-xs fill-slate-300 font-sans"
+                  className="text-xs fill-slate-300"
                 >
                   {name}
                 </text>
@@ -2518,7 +2527,7 @@ function DashboardContent({ onLogout }: { onLogout: () => void }) {
   };
 
   return (
-    <div className="min-h-screen flex bg-background font-sans">
+    <div className={`min-h-screen flex bg-background ${orbitron.className}`}>
       <Sidebar
         activeView={activeView}
         setActiveView={setActiveView}

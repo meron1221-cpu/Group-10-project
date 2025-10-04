@@ -15,6 +15,7 @@ import {
   ShieldCheck,
   Linkedin,
   Github,
+  Twitter,
   Loader2,
   Sun,
   Moon,
@@ -22,6 +23,14 @@ import {
   MessageSquareQuote,
   FileImage,
   Trophy,
+  Award,
+  LayoutDashboard,
+  LogOut,
+  LogIn,
+  ChevronRight,
+  User,
+  UserCog,
+  ChevronDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -38,6 +47,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -48,156 +63,191 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton"; // ✅ ADDED: For loading state
 import Link from "next/link";
 import Image from "next/image";
 import { motion, useInView, animate } from "framer-motion";
 import { useEffect, useRef, useState, createContext, useContext } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
+import { useSession, signIn, signOut, SessionProvider } from "next-auth/react";
+import { ThreatMap } from "@/app/admin/components/threat-map";
+
+// Import the Orbitron font from Google Fonts
+import { Orbitron } from "next/font/google";
+
+// Initialize the font
+const orbitron = Orbitron({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800", "900"],
+});
 
 // --- i18n & THEME & SCAM REPORT CONTEXT ---
 
-const translations = {
-  en: {
-    // New Recent Scams Section
-    recentScamsTitle: "Recent Community Reports",
-    recentScamsSubtitle:
-      "The latest threats reported by the community. Stay informed, stay safe.",
-    noRecentScams: "No new scams have been reported recently.",
-    beTheFirst: "Be the first to report one!",
-    moreScams: "more",
-    allRecentScams: "All Recent Scams (Last 48 Hours)",
-    // New Scam Report Section
-    reportScamTitle: "Report a Scam",
-    reportScamSubtitle:
-      "Help protect the community by sharing details of a scam you've encountered.",
-    scamType: "Type of Scam",
-    scamDescription: "Describe the Scam",
-    scamScreenshot: "Upload Screenshot (Optional)",
-    scamScreenshotHelper: "A picture of the message, email, or website.",
-    submitReport: "Submit Anonymously",
-    noFileChosen: "No file chosen",
-    // Testimonials
-    testimonial1Quote:
-      "GuardSphere is a game-changer. It caught a sophisticated phishing email that our traditional filters missed. Highly recommended!",
-    testimonial1Name: "Sarah L.",
-    testimonial1Role: "IT Manager, TechCorp",
-    testimonial2Quote:
-      "The peace of mind this tool provides is invaluable. The analysis is fast, accurate, and easy to understand.",
-    testimonial2Name: "Michael B.",
-    testimonial2Role: "Small Business Owner",
-    testimonial3Quote:
-      "As a freelance developer, I handle sensitive client data. GuardSphere is my first line of defense. Simple, powerful, and effective.",
-    testimonial3Name: "Jessica P.",
-    testimonial3Role: "Freelance Developer",
-    // Team Members
-    teamMember1Name: "Aphran Mohammed",
-    teamMember1Role: "Lead AI Researcher",
-    teamMember1Bio:
-      "Architecting the AI models that power our real-time scam detection engine.",
-    teamMember2Name: "Nahom Michael",
-    teamMember2Role: "Head of Engineering",
-    teamMember2Bio:
-      "Leading the development of our robust and scalable infrastructure.",
-    teamMember3Name: "Dawit Addis",
-    teamMember3Role: "Cybersecurity Analyst",
-    teamMember3Bio:
-      "Analyzing emerging threats and ensuring our defenses are always one step ahead.",
-    teamMember4Name: "Meron Nisrane",
-    teamMember4Role: "Penetration Tester",
-    teamMember4Bio:
-      "Proactively finding and fixing vulnerabilities to keep our platform secure.",
-    teamMember5Name: "Amanuel",
-    teamMember5Role: "Product Manager",
-    teamMember5Bio:
-      "Defining the vision and roadmap to make cybersecurity accessible to everyone.",
-    // Scam Types
-    scamTypePhishing: "Phishing",
-    scamTypeInvestment: "Investment Fraud",
-    scamTypeJob: "Fake Job Offer",
-    scamTypeBank: "Bank Impersonation",
-    scamTypeLottery: "Lottery Scam",
-    scamTypeTech: "Tech Support Scam",
-    scamTypeOther: "Other",
-    // Existing translations...
-    features: "Features",
-    aboutUs: "About Us",
-    team: "Team",
-    contact: "Contact",
-    analyzeScam: "Analyze Scam",
-    heroTitle: "Protect Yourself from",
-    heroTitleSpan: "Phishing Attacks",
-    heroSubtitle:
-      "Our advanced AI-powered system analyzes emails in real-time to detect phishing attempts, keeping you safe from cybercriminals and protecting your sensitive information.",
-    analyzeNow: "Analyze Scam Now",
-    learnMore: "Learn More",
-    ourImpact: "Our Impact",
-    impactSubtitle: "Real-time phishing detection with proven results.",
-    detectionAccuracy: "Detection Accuracy",
-    analysisTime: "Analysis Time",
-    emailsAnalyzed: "Emails Analyzed",
-    advancedDetection: "Advanced Phishing Detection",
-    advancedDetectionSubtitle:
-      "Our AI model analyzes multiple indicators to provide comprehensive, real-time protection against phishing attacks.",
-    feature1Title: "Suspicious Links",
-    feature1Desc:
-      "Detects malicious URLs, shortened links, and domain spoofing attempts.",
-    feature2Title: "Content Analysis",
-    feature2Desc:
-      "Analyzes for urgent language, spelling errors, and social engineering tactics.",
-    feature3Title: "Header Inspection",
-    feature3Desc:
-      "Examines email headers for authentication failures and sender reputation.",
-    feature4Title: "File Upload",
-    feature4Desc: "Support for .eml files and direct email content analysis.",
-    feature5Title: "Real-time Results",
-    feature5Desc:
-      "Get instant analysis with detailed explanations and confidence scores.",
-    feature6Title: "Privacy First",
-    feature6Desc:
-      "Your emails are analyzed securely and never stored on our servers.",
-    aboutTitle: "Forging a Safer Digital Frontier",
-    aboutSubtitle:
-      "At GuardSphere, we're not just building software; we're building trust. Our mission is to democratize cybersecurity and empower everyone to navigate the digital world with confidence.",
-    coreValues: "Our Core Values",
-    value1Title: "Vigilance",
-    value1Desc:
-      "We monitor threats to stay ahead of cybercriminals, keeping defenses proactive.",
-    value2Title: "Intelligence",
-    value2Desc:
-      "We leverage AI for accurate detection, turning complex data into clear insights.",
-    value3Title: "Accessibility",
-    value3Desc:
-      "Security should be simple and intuitive, available to everyone regardless of expertise.",
-    testimonialsTitle: "What Our Users Say",
-    testimonialsSubtitle:
-      "We're proud to have earned the trust of professionals worldwide.",
-    teamTitle: "Meet Our Team",
-    teamSubtitle:
-      "The passionate minds dedicated to making Ethiopia safer online.",
-    contactTitle: "Get In Touch",
-    contactSubtitle:
-      "Have questions or want to partner with us? We'd love to hear from you.",
-    yourName: "Your Name",
-    yourEmail: "Your Email",
-    subject: "Subject",
-    yourMessage: "Your Message",
-    sendMessage: "Send Message",
-    sending: "Sending...",
-    footerSlogan:
-      "Advanced AI-powered phishing detection to keep you safe online.",
-    quickLinks: "Quick Links",
-    legal: "Legal",
-    privacyPolicy: "Privacy Policy",
-    termsOfService: "Terms of Service",
-    admin: "Admin",
-    stayUpdated: "Stay Updated",
-    stayUpdatedDesc: "Get the latest cybersecurity news and product updates.",
-    enterEmail: "Enter your email",
-    go: "Go",
-    copyright: "GuardSphere. All rights reserved.",
-  },
+const enTranslations = {
+  // Auth
+  signIn: "Sign In",
+  signOut: "Sign Out",
+  dashboard: "Dashboard",
+  // New Recent Scams Section
+  recentScamsTitle: "Recent Community Reports",
+  recentScamsSubtitle:
+    "The latest threats reported by the community. Stay informed, stay safe.",
+  noRecentScams: "No new scams have been reported recently.",
+  beTheFirst: "Be the first to report one!",
+  moreScams: "more",
+  allRecentScams: "All Recent Scams (Last 48 Hours)",
+  // New Scam Report Section
+  reportScamTitle: "Report a Scam",
+  reportScamSubtitle:
+    "Help protect the community by sharing details of a scam you've encountered.",
+  scamType: "Type of Scam",
+  scamDescription: "Describe the Scam",
+  scamScreenshot: "Upload Screenshot (Optional)",
+  scamScreenshotHelper: "A picture of the message, email, or website.",
+  submitReport: "Submit Anonymously",
+  noFileChosen: "No file chosen",
+  // Testimonials
+  testimonial1Quote: "GuardSphere is a game-changer. Highly recommended!",
+  testimonial1Name: "Sarah L.",
+  testimonial1Role: "IT Manager, TechCorp",
+  testimonial2Quote: "The peace of mind this tool provides is invaluable.",
+  testimonial2Name: "Michael B.",
+  testimonial2Role: "Small Business Owner",
+  testimonial3Quote:
+    "GuardSphere is my first line of defense. Simple, powerful, and effective.",
+  testimonial3Name: "Jessica P.",
+  testimonial3Role: "Freelance Developer",
+  // Team Members
+  teamMember1Name: "Aphran Mohammed",
+  teamMember1Role: "Lead AI Researcher",
+  teamMember1Bio:
+    "Architecting the AI models that power our real-time scam detection engine.",
+  teamMember2Name: "Nahom Michael",
+  teamMember2Role: "Head of Engineering",
+  teamMember2Bio:
+    "Leading the development of our robust and scalable infrastructure.",
+  teamMember3Name: "Dawit Addis",
+  teamMember3Role: "Cybersecurity Analyst",
+  teamMember3Bio:
+    "Analyzing emerging threats and ensuring our defenses are always one step ahead.",
+  teamMember4Name: "Meron Nisrane",
+  teamMember4Role: "Penetration Tester",
+  teamMember4Bio:
+    "Proactively finding and fixing vulnerabilities to keep our platform secure.",
+  teamMember5Name: "Amanuel",
+  teamMember5Role: "Product Manager",
+  teamMember5Bio:
+    "Defining the vision and roadmap to make cybersecurity accessible to everyone.",
+  // Scam Types
+  scamTypePhishing: "Phishing",
+  scamTypeInvestment: "Investment Fraud",
+  scamTypeJob: "Fake Job Offer",
+  scamTypeBank: "Bank Impersonation",
+  scamTypeLottery: "Lottery Scam",
+  scamTypeTech: "Tech Support Scam",
+  scamTypeOther: "Other",
+  // Existing translations...
+  features: "Features",
+  aboutUs: "About Us",
+  team: "Team",
+  contact: "Contact",
+  analyzeScam: "Analyze Scam",
+  // UPDATED Hero section text
+  heroTitleLine1: "Protect Yourself",
+  heroTitleLine2: "from Phishing",
+  heroTitleLine3: "Attacks",
+  heroSubtitle:
+    "Our advanced AI-powered system analyzes emails, texts in real-time to detect phishing attempts.",
+  analyzeNow: "Analyze Scam Now",
+  learnMore: "Learn More",
+  ourImpact: "Our Impact",
+  impactSubtitle: "Real-time phishing detection with proven results.",
+  detectionAccuracy: "Detection Accuracy",
+  analysisTime: "Analysis Time",
+  emailsAnalyzed: "Emails Analyzed",
+  advancedDetection: "Advanced Phishing Detection",
+  advancedDetectionSubtitle:
+    "Our AI model analyzes multiple indicators to provide comprehensive, real-time protection against phishing attacks.",
+  feature1Title: "Suspicious Links",
+  feature1Desc:
+    "Detects malicious URLs, shortened links, and domain spoofing attempts.",
+  feature2Title: "Content Analysis",
+  feature2Desc:
+    "Analyzes for urgent language, spelling errors, and social engineering tactics.",
+  feature3Title: "Header Inspection",
+  feature3Desc:
+    "Examines email headers for authentication failures and sender reputation.",
+  feature4Title: "File Upload",
+  feature4Desc: "Support for .eml files and direct email content analysis.",
+  feature5Title: "Real-time Results",
+  feature5Desc:
+    "Get instant analysis with detailed explanations and confidence scores.",
+  feature6Title: "Privacy First",
+  feature6Desc:
+    "Your emails are analyzed securely and never stored on our servers.",
+  aboutTitle: "Forging a Safer Digital Frontier",
+  aboutSubtitle:
+    "At GuardSphere, we're not just building software; we're building trust. Our mission is to democratize cybersecurity and empower everyone to navigate the digital world with confidence.",
+  coreValues: "Our Core Values",
+  value1Title: "Vigilance",
+  value1Desc:
+    "We monitor threats to stay ahead of cybercriminals, keeping defenses proactive.",
+  value2Title: "Intelligence",
+  value2Desc:
+    "We leverage AI for accurate detection, turning complex data into clear insights.",
+  value3Title: "Accessibility",
+  value3Desc:
+    "Security should be simple and intuitive, available to everyone regardless of expertise.",
+  testimonialsTitle: "What Our Users Say",
+  testimonialsSubtitle:
+    "We're proud to have earned the trust of professionals worldwide.",
+  teamTitle: "Meet Our Team",
+  teamSubtitle:
+    "The passionate minds dedicated to making Ethiopia safer online.",
+  contactTitle: "Get In Touch",
+  contactSubtitle:
+    "Have questions or want to partner with us? We'd love to hear from you.",
+  yourName: "Your Name",
+  yourEmail: "Your Email",
+  subject: "Subject",
+  yourMessage: "Your Message",
+  sendMessage: "Send Message",
+  sending: "Sending...",
+  footerSlogan:
+    "Advanced AI-powered phishing detection to keep you safe online.",
+  quickLinks: "Quick Links",
+  legal: "Legal",
+  privacyPolicy: "Privacy Policy",
+  termsOfService: "Terms of Service",
+  admin: "Admin",
+  stayUpdated: "Stay Updated",
+  stayUpdatedDesc: "Get the latest cybersecurity news and product updates.",
+  enterEmail: "Enter your email",
+  go: "Go",
+  copyright: "GuardSphere. All rights reserved.",
+  // New for gamification
+  guardianPoints: "Guardian Points",
+  earnedPoints: "You've earned {points} Guardian Points!",
+  // New for Blog
+  blogTitle: "Scam of the Week & Resource Center",
+  blogSubtitle: "Deep dives into recent threats and how to stay safe.",
+  readMore: "Read More",
+  // New for B2B Monitoring
+  domainMonitoringTitle: "Proactive Brand & Domain Monitoring",
+  domainMonitoringSubtitle: "Protect your brand from impersonation.",
+  domainMonitoringDesc:
+    "Register your official domains and we'll scour the web for lookalike domains (typosquatting), alerting you to potential threats.",
+  learnAboutMonitoring: "Learn About Monitoring",
+};
+
+const translations: Record<"en" | "am", typeof enTranslations> = {
+  en: enTranslations,
   am: {
+    // Auth
+    signIn: "ግባ",
+    signOut: "ውጣ",
+    dashboard: "ዳሽቦርድ",
     // New Recent Scams Section
     recentScamsTitle: "የቅርብ ጊዜ የማህበረሰብ ሪፖርቶች",
     recentScamsSubtitle: "በማህበረሰቡ የተዘገቡ የቅርብ ጊዜ ስጋቶች። መረጃ ይኑርዎት፣ ደህንነትዎን ይጠብቁ።",
@@ -215,16 +265,13 @@ const translations = {
     submitReport: "ስም-አልባ አስገባ",
     noFileChosen: "ምንም ፋይል አልተመረጠም",
     // Testimonials
-    testimonial1Quote:
-      "GuardSphere በጣም አስደናቂ ነው። ባህላዊ ማጣሪያዎቻችን ያመለጡትን የተራቀቀ የማስገር ኢሜይል ይዞታል። በጣም ይመከራል!",
+    testimonial1Quote: "GuardSphere በጣም አስደናቂ ነው። በጣም ይመከራል!",
     testimonial1Name: "ሣራ ኤል.",
     testimonial1Role: "የ IT ሥራ አስኪያጅ, TechCorp",
-    testimonial2Quote:
-      "ይህ መሳሪያ የሚሰጠው የአእምሮ ሰላም неоціненний ነው። ትንታኔው ፈጣን፣ ትክክለኛ እና ለመረዳት ቀላል ነው።",
+    testimonial2Quote: "ይህ መሳሪያ የሚሰጠው የአእምሮ ሰላም ዋጋ የማይተመን ነው።",
     testimonial2Name: "ሚካኤል ቢ.",
     testimonial2Role: "የአነስተኛ ንግድ ባለቤት",
-    testimonial3Quote:
-      "እንደ ፍሪላንስ ገንቢ፣ ሚስጥራዊ የደንበኛ መረጃዎችን እይዛለሁ። GuardSphere የመጀመሪያው የመከላከያ መስመሬ ነው። ቀላል፣ ኃይለኛ እና ውጤታማ።",
+    testimonial3Quote: "GuardSphere የመጀመሪያው የመከላከያ መስመሬ ነው። ቀላል፣ ኃይለኛ እና ውጤታማ።",
     testimonial3Name: "ጄሲካ ፒ.",
     testimonial3Role: "ፍሪላንስ ገንቢ",
     // Team Members
@@ -257,10 +304,12 @@ const translations = {
     team: "ቡድን",
     contact: "ግንኙነት",
     analyzeScam: "ማጭበርበርን ተንትን",
-    heroTitle: "እራስዎን ከ",
-    heroTitleSpan: "አስጋሪ ጥቃቶች ይጠብቁ",
+    // UPDATED Hero section text (Amharic)
+    heroTitleLine1: "እራስዎን ይጠብቁ",
+    heroTitleLine2: "ከአስጋሪ",
+    heroTitleLine3: "ጥቃቶች",
     heroSubtitle:
-      "የኛ የላቀ አርቴፊሻል ኢንተለጀንስ ሲስተም ኢሜይሎችን በእውነተኛ ጊዜ በመተንተን አስጋሪ ጥቃቶችን በመለየት ከሳይበር ወንጀለኞች ይጠብቅዎታል እንዲሁም ሚስጥራዊ መረጃዎን ይጠብቃል።",
+      "የኛ የላቀ አርቴፊሻል ኢንተለጀንስ ሲስተም ኢሜይሎችን እና የጽሁፍ መልዕክቶችን በእውነተኛ ጊዜ በመተንተን አስጋሪ ጥቃቶችን ይለያል።",
     analyzeNow: "አሁን ማጭበርበርን ተንትን",
     learnMore: "ተጨማሪ እወቅ",
     ourImpact: "የኛ ተጽዕኖ",
@@ -318,6 +367,19 @@ const translations = {
     enterEmail: "ኢሜይልዎን ያስገቡ",
     go: "ሂድ",
     copyright: "GuardSphere. ሁሉም መብቶች የተጠበቁ ናቸው።",
+    // New for gamification
+    guardianPoints: "የጠባቂ ነጥቦች",
+    earnedPoints: "{points} የጠባቂ ነጥቦችን አግኝተዋል!",
+    // New for Blog
+    blogTitle: "የሳምንቱ ማጭበርበር እና የመረጃ ማዕከል",
+    blogSubtitle: "የቅርብ ጊዜ ስጋቶች እና እንዴት ደህንነትዎን መጠበቅ እንደሚችሉ ጥልቅ ትንተና።",
+    readMore: "ተጨማሪ ያንብቡ",
+    // New for B2B Monitoring
+    domainMonitoringTitle: "ንቁ የጎራ ክትትል",
+    domainMonitoringSubtitle: "ብራንድዎን ከማስመሰል ይጠብቁ።",
+    domainMonitoringDesc:
+      "ኦፊሴላዊ ጎራዎችዎን ያስመዝግቡ እና እኛም ድሩን ለተመሳሳይ ጎራዎች (typosquatting) እንፈትሻለን፣ ሊሆኑ የሚችሉ ስጋቶችን እናሳውቅዎታለን።",
+    learnAboutMonitoring: "ስለ ክትትል ይወቁ",
   },
 };
 
@@ -327,7 +389,7 @@ type AppContextType = {
   setTheme: (theme: "light" | "dark") => void;
   language: "en" | "am";
   setLanguage: (language: "en" | "am") => void;
-  t: (key: keyof (typeof translations)["en"]) => string;
+  t: (key: keyof typeof enTranslations) => string;
 };
 
 const AppContext = createContext<AppContextType | null>(null);
@@ -345,7 +407,7 @@ interface ScamReport {
   id: number;
   scamType: string;
   description: string;
-  screenshotUrl?: string;
+  screenshotUrl?: string; // This will now be a base64 string
   timestamp: number;
 }
 
@@ -432,14 +494,18 @@ function AppProvider({ children }: { children: React.ReactNode }) {
     setThemeState(newTheme);
   };
 
-  const t = (key: keyof (typeof translations)["en"]) => {
+  const t = (key: keyof typeof enTranslations) => {
     return translations[language][key] || translations["en"][key];
   };
 
   return (
-    <AppContext.Provider value={{ theme, setTheme, language, setLanguage, t }}>
-      <ScamProvider>{children}</ScamProvider>
-    </AppContext.Provider>
+    <SessionProvider>
+      <AppContext.Provider
+        value={{ theme, setTheme, language, setLanguage, t }}
+      >
+        <ScamProvider>{children}</ScamProvider>
+      </AppContext.Provider>
+    </SessionProvider>
   );
 }
 
@@ -489,6 +555,7 @@ function Counter({ to }: { to: number }) {
 
 function Header() {
   const { t, theme, setTheme, language, setLanguage } = useAppContext();
+  const { data: session, status } = useSession();
 
   const toggleTheme = () => {
     setTheme(theme === "light" ? "dark" : "light");
@@ -501,44 +568,85 @@ function Header() {
   return (
     <header className="border-b border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm sticky top-0 z-50">
       <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-        <div className="flex items-center space-x-3">
+        <Link href="/" className="flex items-center space-x-3">
           <Shield className="h-8 w-8 text-blue-600" />
           <span className="text-2xl font-bold text-gray-900 dark:text-white">
             GuardSphere
           </span>
-        </div>
+        </Link>
         <nav className="hidden md:flex items-center space-x-8">
           <Link
-            href="#features"
+            href="/#features"
             className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-white transition-colors font-medium"
           >
             {t("features")}
           </Link>
           <Link
-            href="#about"
+            href="/#about"
             className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-white transition-colors font-medium"
           >
             {t("aboutUs")}
           </Link>
           <Link
-            href="#team"
+            href="/#team"
             className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-white transition-colors font-medium"
           >
             {t("team")}
           </Link>
           <Link
-            href="#contact"
+            href="/#contact"
             className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-white transition-colors font-medium"
           >
             {t("contact")}
           </Link>
         </nav>
         <div className="flex items-center gap-2">
-          <Link href="/analyze">
-            <Button className="bg-blue-600 hover:bg-blue-700 shadow-md hover:shadow-lg transition-shadow">
-              {t("analyzeScam")}
-            </Button>
-          </Link>
+          {/* Auth Logic */}
+          {status === "loading" ? (
+            <div className="h-10 w-24 animate-pulse bg-gray-200 dark:bg-gray-700 rounded-md"></div>
+          ) : session ? (
+            <>
+              <Link href="/dashboard">
+                <Button variant="outline">
+                  <LayoutDashboard className="mr-2 h-4 w-4" />
+                  {t("dashboard")}
+                </Button>
+              </Link>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => signOut()}
+                aria-label={t("signOut")}
+              >
+                <LogOut className="h-5 w-5" />
+              </Button>
+            </>
+          ) : (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button>
+                  {t("signIn")}
+                  <ChevronDown className="ml-2 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem asChild>
+                  <Link href="/auth/signup" className="cursor-pointer">
+                    <User className="mr-2 h-4 w-4" />
+                    <span>Sign in as User</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/admin" className="cursor-pointer">
+                    <UserCog className="mr-2 h-4 w-4" />
+                    <span>Sign in as Admin</span>
+                  </Link>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+
+          {/* Theme and Language Toggles */}
           <Button
             variant="ghost"
             size="icon"
@@ -565,27 +673,31 @@ function Header() {
 function HeroSection() {
   const { t } = useAppContext();
   return (
-    <section className="relative font-sans py-24 md:py-32 px-4 bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-blue-900/30 overflow-hidden">
+    <section className="relative py-16 md:py-24 px-4 bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-blue-900/30 overflow-hidden">
       <div className="absolute top-0 -left-4 w-72 h-72 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
       <div className="absolute top-0 -right-4 w-72 h-72 bg-blue-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
       <div className="absolute -bottom-8 left-20 w-72 h-72 bg-indigo-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
-      <div className="container mx-auto text-center relative">
+
+      <div className="container mx-auto relative grid grid-cols-1 lg:grid-cols-2 items-center gap-12">
+        {/* Left Column: Text Content */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0, x: -50 }}
+          animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
+          className="text-center lg:text-left"
         >
-          <div className="max-w-4xl mx-auto">
+          <div className="max-w-2xl">
             <motion.h1
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
-              className="text-5xl md:text-7xl font-extrabold text-gray-900 dark:text-white mb-6 tracking-tight"
+              className="text-5xl md:text-5xl font-extrabold text-gray-900 dark:text-white mb-6 tracking-tight"
             >
-              {t("heroTitle")}{" "}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600">
-                {t("heroTitleSpan")}
+              <span>{t("heroTitleLine1")}</span>
+              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600">
+                {t("heroTitleLine2")}
               </span>
+              <span>{t("heroTitleLine3")}</span>
             </motion.h1>
             <motion.p
               initial={{ opacity: 0, y: 20 }}
@@ -599,7 +711,7 @@ function HeroSection() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.6, ease: "easeOut" }}
-              className="flex flex-col sm:flex-row gap-4 justify-center"
+              className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start"
             >
               <Link href="/analyze">
                 <Button
@@ -622,6 +734,37 @@ function HeroSection() {
             </motion.div>
           </div>
         </motion.div>
+
+        {/* Right Column: Animated Image */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 1, delay: 0.5, ease: "easeOut" }}
+          className="relative flex items-center justify-center"
+        >
+          <motion.div
+            animate={{
+              y: ["0%", "-4%", "0%"],
+              rotateY: [0, 15, 0],
+              rotateX: [0, -5, 0],
+            }}
+            transition={{
+              duration: 8,
+              ease: "easeInOut",
+              repeat: Infinity,
+            }}
+            className="w-full max-w-md lg:max-w-lg"
+          >
+            <Image
+              src="/hero-cyber-image.jpg"
+              alt="Scam Detector Cybersecurity Illustration"
+              width={600}
+              height={600}
+              priority
+              className="drop-shadow-2xl rounded-3xl"
+            />
+          </motion.div>
+        </motion.div>
       </div>
     </section>
   );
@@ -631,7 +774,7 @@ function StatsSection() {
   const { t } = useAppContext();
   const stats = [
     {
-      value: 99.7,
+      value: 97.5,
       label: t("detectionAccuracy"),
       suffix: "%",
       icon: Shield,
@@ -655,47 +798,44 @@ function StatsSection() {
   ];
 
   return (
-    <section className="py-12 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800/30 dark:to-gray-900/50">
+    <section className="py-20 bg-slate-50 dark:bg-gray-900">
       <div className="container mx-auto px-4">
         <AnimatedSection>
-          <div className="text-center mb-8">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-5xl font-extrabold text-gray-900 dark:text-white mb-4">
               {t("ourImpact")}
             </h2>
-            <p className="text-md md:text-lg text-gray-600 dark:text-gray-400 mt-2 max-w-2xl mx-auto">
+            <p className="text-md md:text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
               {t("impactSubtitle")}
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {stats.map((stat, index) => (
-              <motion.div
-                key={index}
-                whileHover={{ scale: 1.03, y: -3 }}
-                className="bg-white dark:bg-gray-800/50 rounded-xl p-6 shadow-md dark:shadow-2xl flex flex-col items-center justify-center transition-all duration-300"
-              >
-                <div className="mb-3 p-3 rounded-full bg-gradient-to-tr from-blue-100 to-indigo-100 dark:from-blue-900/50 dark:to-indigo-900/50">
-                  <stat.icon className={`h-8 w-8 ${stat.color}`} />
-                </div>
-                <div className={`text-4xl font-bold ${stat.color} mb-1`}>
-                  {stat.prefix}
-                  <Counter to={stat.value} />
-                  {stat.suffix}
-                </div>
-                <div className="text-gray-600 dark:text-gray-400 text-sm md:text-base">
-                  {stat.label}
-                </div>
-              </motion.div>
-            ))}
-          </div>
         </AnimatedSection>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {stats.map((stat, index) => (
+            <motion.div
+              key={index}
+              whileHover={{ scale: 1.03, y: -3 }}
+              className="bg-white dark:bg-gray-800/50 rounded-xl p-6 shadow-md dark:shadow-2xl flex flex-col items-center justify-center transition-all duration-300"
+            >
+              <div className="mb-3 p-3 rounded-full bg-gradient-to-tr from-blue-100 to-indigo-100 dark:from-blue-900/50 dark:to-indigo-900/50">
+                <stat.icon className={`h-8 w-8 ${stat.color}`} />
+              </div>
+              <div className={`text-4xl font-bold ${stat.color} mb-1`}>
+                {stat.prefix}
+                <Counter to={stat.value} />
+                {stat.suffix}
+              </div>
+              <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400 text-sm md:text-base">
+                {stat.label}
+              </div>
+            </motion.div>
+          ))}
+        </div>
       </div>
     </section>
   );
 }
 
-// --- REFACTORED: Recent Scams Section ---
-
-// A smaller card component for use inside the dialog
 function DialogScamCard({ scam }: { scam: ScamReport }) {
   return (
     <div className="flex items-start gap-4 p-4 border-b dark:border-gray-700">
@@ -721,42 +861,42 @@ function DialogScamCard({ scam }: { scam: ScamReport }) {
   );
 }
 
-// The card for displaying a single scam in the main grid
 function ScamCard({ scam }: { scam: ScamReport }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.5 }}
-      className="h-full"
-    >
-      <Card className="h-full flex flex-col overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 dark:bg-gray-800/50">
-        {scam.screenshotUrl && (
-          <div className="relative w-full h-40">
-            <Image
-              src={scam.screenshotUrl}
-              alt="Scam screenshot"
-              layout="fill"
-              objectFit="cover"
-            />
-          </div>
-        )}
-        <CardHeader>
-          <Badge variant="destructive" className="w-fit">
-            {scam.scamType}
-          </Badge>
-        </CardHeader>
-        <CardContent className="flex-grow">
-          <p className="text-gray-600 dark:text-gray-300 line-clamp-3">
-            {scam.description}
-          </p>
-        </CardContent>
-      </Card>
-    </motion.div>
+    <Link href={`/analysis/${scam.id}`} passHref>
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5 }}
+        className="h-full"
+      >
+        <Card className="h-full flex flex-col overflow-hidden shadow-lg hover:shadow-2xl hover:ring-2 hover:ring-blue-500 transition-all duration-300 dark:bg-gray-800/50 cursor-pointer">
+          {scam.screenshotUrl && (
+            <div className="relative w-full h-40">
+              <Image
+                src={scam.screenshotUrl}
+                alt="Scam screenshot"
+                layout="fill"
+                objectFit="cover"
+              />
+            </div>
+          )}
+          <CardHeader>
+            <Badge variant="destructive" className="w-fit">
+              {scam.scamType}
+            </Badge>
+          </CardHeader>
+          <CardContent className="flex-grow">
+            <p className="text-gray-600 dark:text-gray-300 line-clamp-3">
+              {scam.description}
+            </p>
+          </CardContent>
+        </Card>
+      </motion.div>
+    </Link>
   );
 }
 
-// The special card for showing "+N more"
 function MoreScamsCard({
   count,
   onClick,
@@ -789,15 +929,30 @@ function RecentScamsSection() {
   const { t } = useAppContext();
   const { recentScams } = useScam();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [filter, setFilter] = useState("all");
 
-  const displayScams = recentScams.slice(0, 3);
-  const remainingCount = recentScams.length > 3 ? recentScams.length - 2 : 0;
+  const scamTypes = [
+    "Phishing",
+    "Investment Fraud",
+    "Fake Job Offer",
+    "Bank Impersonation",
+    "Lottery Scam",
+    "Tech Support Scam",
+    "Other",
+  ];
+
+  const filteredScams = recentScams.filter(
+    (scam) => filter === "all" || scam.scamType === filter
+  );
+  const displayScams = filteredScams.slice(0, 3);
+  const remainingCount =
+    filteredScams.length > 3 ? filteredScams.length - 2 : 0;
 
   return (
     <section className="py-24 bg-white dark:bg-gray-900">
       <div className="container mx-auto px-4">
         <AnimatedSection>
-          <div className="text-center mb-12">
+          <div className="text-center mb-6">
             <h2 className="text-4xl md:text-5xl font-bold mb-4 tracking-tight text-blue-500 dark:text-blue-400">
               {t("recentScamsTitle")}
             </h2>
@@ -805,8 +960,23 @@ function RecentScamsSection() {
               {t("recentScamsSubtitle")}
             </p>
           </div>
+          <div className="flex justify-center mb-12">
+            <Select value={filter} onValueChange={setFilter}>
+              <SelectTrigger className="w-[240px]">
+                <SelectValue placeholder="Filter by type..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Types</SelectItem>
+                {scamTypes.map((type) => (
+                  <SelectItem key={type} value={type}>
+                    {type}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-          {recentScams.length === 0 ? (
+          {filteredScams.length === 0 ? (
             <div className="text-center py-12 border-2 border-dashed rounded-lg">
               <p className="text-lg text-gray-500 dark:text-gray-400">
                 {t("noRecentScams")}
@@ -819,7 +989,7 @@ function RecentScamsSection() {
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {displayScams.map((scam, index) => {
-                  if (index === 2 && recentScams.length > 3) {
+                  if (index === 2 && filteredScams.length > 3) {
                     return (
                       <DialogTrigger asChild key="more-trigger">
                         <MoreScamsCard
@@ -837,7 +1007,7 @@ function RecentScamsSection() {
                   <DialogTitle>{t("allRecentScams")}</DialogTitle>
                 </DialogHeader>
                 <div className="flex-grow overflow-y-auto">
-                  {recentScams.map((scam) => (
+                  {filteredScams.map((scam) => (
                     <DialogScamCard key={scam.id} scam={scam} />
                   ))}
                 </div>
@@ -908,6 +1078,7 @@ function FeaturesSection() {
   );
 }
 
+// ✅ UPDATED: About Section with interactive SVG
 function AboutSection() {
   const { t } = useAppContext();
   const values = [
@@ -939,7 +1110,7 @@ function AboutSection() {
             <h2 className="text-3xl md:text-5xl font-extrabold text-blue-500 dark:text-blue-400 mb-4 tracking-tight">
               {t("aboutTitle")}
             </h2>
-            <p className="text-md md:text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+            <p className="text-md md:text-lg text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
               {t("aboutSubtitle")}
             </p>
           </div>
@@ -947,7 +1118,20 @@ function AboutSection() {
         <div className="lg:grid lg:grid-cols-2 lg:gap-10 lg:items-center">
           <AnimatedSection className="relative h-80 lg:h-auto mb-12 lg:mb-0">
             <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-indigo-700 rounded-2xl shadow-2xl transform -rotate-2"></div>
-            <div className="relative h-full w-full p-6 flex items-center justify-center rounded-2xl bg-gray-900/20 backdrop-blur-lg border border-white/10">
+            <motion.div
+              className="relative h-full w-full p-6 flex items-center justify-center rounded-2xl bg-gray-900/20 backdrop-blur-lg border border-white/10"
+              animate={{
+                y: ["0%", "-3%", "0%"],
+                scale: [1, 1.02, 1],
+                rotate: [-1, 1, -1],
+              }}
+              transition={{
+                duration: 5,
+                ease: "easeInOut",
+                repeat: Infinity,
+              }}
+              whileTap={{ scale: 0.95, rotate: 5 }}
+            >
               <svg
                 className="w-3/4 h-3/4 text-white/30"
                 viewBox="0 0 200 200"
@@ -977,7 +1161,7 @@ function AboutSection() {
                 <circle cx="150" cy="125" r="3" fill="currentColor" />
                 <circle cx="100" cy="50" r="3" fill="currentColor" />
               </svg>
-            </div>
+            </motion.div>
           </AnimatedSection>
           <AnimatedSection className="relative">
             <div className="bg-white/90 dark:bg-gray-800/70 backdrop-blur-md p-8 md:p-12 rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700">
@@ -1014,6 +1198,7 @@ function AboutSection() {
   );
 }
 
+// ✅ UPDATED: Testimonials Section with reduced spacing
 function TestimonialsSection() {
   const { t } = useAppContext();
   const testimonials = [
@@ -1060,8 +1245,9 @@ function TestimonialsSection() {
                 whileHover={{ y: -5, scale: 1.03 }}
                 transition={{ duration: 0.3 }}
               >
-                <Card className="h-full flex flex-col justify-between shadow-xl rounded-2xl border border-gray-200 dark:border-gray-700 hover:shadow-2xl transition-transform hover:scale-105 bg-white/80 dark:bg-gray-800/50 backdrop-blur-sm min-h-[320px]">
-                  <CardContent className="pt-6 px-6 flex-1">
+                <Card className="h-full flex flex-col justify-between shadow-xl rounded-2xl border border-gray-200 dark:border-gray-700 hover:shadow-2xl transition-transform hover:scale-105 bg-white/80 dark:bg-gray-800/50 backdrop-blur-sm min-h-[280px]">
+                  {/* Adjusted padding on CardContent */}
+                  <CardContent className="p-6 flex-1">
                     <div className="flex space-x-1 text-yellow-400 mb-4 drop-shadow-md">
                       {[...Array(5)].map((_, i) => (
                         <Star key={i} fill="currentColor" />
@@ -1071,7 +1257,8 @@ function TestimonialsSection() {
                       "{testimonial.quote}"
                     </blockquote>
                   </CardContent>
-                  <CardHeader className="pt-4 px-6">
+                  {/* Adjusted padding on CardHeader */}
+                  <CardHeader className="pt-2 px-6">
                     <div className="font-semibold text-gray-900 dark:text-white">
                       {testimonial.name}
                     </div>
@@ -1089,7 +1276,6 @@ function TestimonialsSection() {
   );
 }
 
-// --- UPDATED: PROFESSIONAL REPORT SCAM FORM SECTION ---
 function ReportScamSection() {
   const { t } = useAppContext();
   const { addScamReport } = useScam();
@@ -1109,7 +1295,6 @@ function ReportScamSection() {
     { value: "Other", labelKey: "scamTypeOther" },
   ];
 
-  // Helper to convert file to base64
   const fileToBase64 = (file: File): Promise<string> =>
     new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -1151,11 +1336,15 @@ function ReportScamSection() {
 
     addScamReport({ scamType, description, screenshotUrl });
 
+    const pointsEarned = 10;
     toast.success("Thank you! Your report has been submitted.", {
-      description: "Your contribution helps keep the community safe.",
+      description: t("earnedPoints").replace(
+        "{points}",
+        pointsEarned.toString()
+      ),
+      icon: <Award className="h-5 w-5 text-yellow-500" />,
     });
 
-    // Reset form state
     setDescription("");
     setScamType("Phishing");
     setScreenshot(null);
@@ -1188,7 +1377,10 @@ function ReportScamSection() {
                     <div className="space-y-2">
                       <Label htmlFor="scamType">{t("scamType")}</Label>
                       <Select value={scamType} onValueChange={setScamType}>
-                        <SelectTrigger id="scamType">
+                        <SelectTrigger
+                          id="scamType"
+                          className={orbitron.className}
+                        >
                           <SelectValue placeholder="Select a type" />
                         </SelectTrigger>
                         <SelectContent>
@@ -1243,7 +1435,7 @@ function ReportScamSection() {
                   <div className="flex justify-center">
                     <Button
                       type="submit"
-                      className="w-full md:w-auto" // Button is smaller on larger screens
+                      className="w-full md:w-auto"
                       disabled={isSubmitting}
                     >
                       {isSubmitting ? (
@@ -1258,6 +1450,155 @@ function ReportScamSection() {
               </CardContent>
             </Card>
           </div>
+        </AnimatedSection>
+      </div>
+    </section>
+  );
+}
+
+// ✅ UPDATED: Blog Section to be functional and real-time
+const BlogPostSkeleton = () => (
+  <div className="flex flex-col space-y-3">
+    <Skeleton className="h-[200px] w-full rounded-xl" />
+    <div className="space-y-2">
+      <Skeleton className="h-4 w-3/4" />
+      <Skeleton className="h-4 w-1/2" />
+    </div>
+  </div>
+);
+
+function BlogSection() {
+  const { t } = useAppContext();
+  const [posts, setPosts] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // Simulate fetching data from an API
+    const fetchPosts = () => {
+      setIsLoading(true);
+      setTimeout(() => {
+        const newPosts = [
+          {
+            id: 1,
+            title: "The Rise of Deepfake Voice Scams",
+            excerpt:
+              "Learn how AI is being used to mimic voices and how to protect yourself from sophisticated deepfake scams.",
+            link: "/blog/deepfake-voice-scams",
+            image: `https://source.unsplash.com/random/800x600?technology,${Math.random()}`,
+          },
+          {
+            id: 2,
+            title: "Anatomy of an Ethio Telecom Impersonation Scam",
+            excerpt:
+              "We break down a recent SMS scam targeting mobile users in Ethiopia, detailing its tactics and how GuardSphere detects it.",
+            link: "/blog/ethio-telecom-impersonation",
+            image: `https://source.unsplash.com/random/800x600?security,${Math.random()}`,
+          },
+          {
+            id: 3,
+            title: "Understanding Phishing: The Basics",
+            excerpt:
+              "A foundational guide to identifying and avoiding common phishing attacks, from email to social media.",
+            link: "/blog/understanding-phishing",
+            image: `https://source.unsplash.com/random/800x600?hacker,${Math.random()}`,
+          },
+        ];
+        setPosts(newPosts);
+        setIsLoading(false);
+      }, 1500); // Simulate a 1.5-second network delay
+    };
+
+    fetchPosts();
+  }, []);
+
+  return (
+    <section className="py-24 bg-white dark:bg-gray-900">
+      <div className="container mx-auto px-4">
+        <AnimatedSection>
+          <div className="text-center mb-12">
+            <h2 className="text-4xl md:text-5xl font-bold mb-4 tracking-tight text-blue-500 dark:text-blue-400">
+              {t("blogTitle")}
+            </h2>
+            <p className="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
+              {t("blogSubtitle")}
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {isLoading
+              ? Array.from({ length: 3 }).map((_, index) => (
+                  <BlogPostSkeleton key={index} />
+                ))
+              : posts.map((post) => (
+                  <Link href={post.link} key={post.id} passHref>
+                    <motion.div
+                      whileHover={{ y: -5, scale: 1.03 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <Card className="h-full flex flex-col overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 dark:bg-gray-800/50 cursor-pointer">
+                        {post.image && (
+                          <div className="relative w-full h-48">
+                            <Image
+                              src={post.image}
+                              alt={post.title}
+                              layout="fill"
+                              objectFit="cover"
+                            />
+                          </div>
+                        )}
+                        <CardHeader>
+                          <CardTitle className="text-xl">
+                            {post.title}
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="flex-grow">
+                          <p className="text-gray-600 dark:text-gray-300 line-clamp-3">
+                            {post.excerpt}
+                          </p>
+                        </CardContent>
+                        <div className="p-6 pt-0">
+                          <Button variant="link" className="p-0">
+                            {t("readMore")}{" "}
+                            <ChevronRight className="ml-1 h-4 w-4" />
+                          </Button>
+                        </div>
+                      </Card>
+                    </motion.div>
+                  </Link>
+                ))}
+          </div>
+        </AnimatedSection>
+      </div>
+    </section>
+  );
+}
+
+function DomainMonitoringSection() {
+  const { t } = useAppContext();
+  return (
+    <section
+      className={`py-24 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 ${orbitron.className}`}
+    >
+      <div className="container mx-auto px-4 text-center">
+        <AnimatedSection>
+          <Card className="max-w-4xl mx-auto p-8 shadow-xl dark:bg-gray-900">
+            <CardHeader>
+              <ShieldCheck className="h-16 w-16 text-green-600 mx-auto mb-4" />
+              <CardTitle className="text-3xl font-bold mb-2">
+                {t("domainMonitoringTitle")}
+              </CardTitle>
+              <CardDescription className="text-lg">
+                {t("domainMonitoringSubtitle")}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-gray-700 dark:text-gray-300">
+                {t("domainMonitoringDesc")}
+              </p>
+              <Button size="lg" className="bg-green-600 hover:bg-green-700">
+                <Link href="/monitoring">{t("learnAboutMonitoring")}</Link>
+              </Button>
+            </CardContent>
+          </Card>
         </AnimatedSection>
       </div>
     </section>
@@ -1606,6 +1947,31 @@ function Footer() {
                   {t("contact")}
                 </Link>
               </li>
+              {/* New Quick Links */}
+              <li>
+                <Link
+                  href="/blog"
+                  className="hover:text-white transition-colors"
+                >
+                  {t("blogTitle")}
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/monitoring"
+                  className="hover:text-white transition-colors"
+                >
+                  {t("domainMonitoringTitle")}
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/leaderboard"
+                  className="hover:text-white transition-colors"
+                >
+                  Leaderboard
+                </Link>
+              </li>
             </ul>
           </div>
           <div>
@@ -1619,14 +1985,6 @@ function Footer() {
               <li>
                 <Link href="#" className="hover:text-white transition-colors">
                   {t("termsOfService")}
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/admin"
-                  className="hover:text-white transition-colors text-xs opacity-60"
-                >
-                  {t("admin")}
                 </Link>
               </li>
             </ul>
@@ -1659,10 +2017,40 @@ function Footer() {
             </form>
           </div>
         </div>
-        <div className="border-t border-gray-800 pt-8 text-center text-gray-500">
-          <p>
+        <div className="border-t border-gray-800 pt-8 flex flex-col sm:flex-row justify-between items-center">
+          <p className="text-gray-500 text-sm">
             &copy; {new Date().getFullYear()} {t("copyright")}
           </p>
+          {/* Social Media Icons */}
+          <div className="flex space-x-4 mt-4 sm:mt-0">
+            <a
+              href="https://twitter.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-gray-400 hover:text-white transition-colors"
+              aria-label="Twitter"
+            >
+              <Twitter />
+            </a>
+            <a
+              href="https://github.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-gray-400 hover:text-white transition-colors"
+              aria-label="GitHub"
+            >
+              <Github />
+            </a>
+            <a
+              href="https://linkedin.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-gray-400 hover:text-white transition-colors"
+              aria-label="LinkedIn"
+            >
+              <Linkedin />
+            </a>
+          </div>
         </div>
       </div>
     </footer>
@@ -1673,7 +2061,9 @@ function Footer() {
 
 function HomePageContent() {
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-800 dark:bg-gray-900 dark:text-gray-300 transition-colors duration-300">
+    <div
+      className={`min-h-screen bg-gray-50 text-gray-800 dark:bg-gray-900 dark:text-gray-300 transition-colors duration-300 ${orbitron.className}`}
+    >
       <Header />
       <main>
         <HeroSection />
@@ -1683,6 +2073,8 @@ function HomePageContent() {
         <AboutSection />
         <TestimonialsSection />
         <ReportScamSection />
+        <BlogSection />
+        <DomainMonitoringSection />
         <TeamSection />
         <ContactSection />
       </main>
