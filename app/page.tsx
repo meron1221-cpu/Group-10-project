@@ -63,7 +63,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Skeleton } from "@/components/ui/skeleton"; // ✅ ADDED: For loading state
+import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
 import Image from "next/image";
 import { motion, useInView, animate } from "framer-motion";
@@ -72,9 +72,8 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { useSession, signIn, signOut, SessionProvider } from "next-auth/react";
 import { ThreatMap } from "@/app/admin/components/threat-map";
-
-// Import the Orbitron font from Google Fonts
 import { Orbitron } from "next/font/google";
+import { allBlogPosts } from "@/lib/blog-data"; // Import from the new file
 
 // Initialize the font
 const orbitron = Orbitron({
@@ -162,10 +161,11 @@ const enTranslations = {
   analyzeNow: "Analyze Scam Now",
   learnMore: "Learn More",
   ourImpact: "Our Impact",
-  impactSubtitle: "Real-time phishing detection with proven results.",
-  detectionAccuracy: "Detection Accuracy",
+  impactSubtitle:
+    "Our platform's performance, driven by community intelligence.",
+  detectionAccuracy: "Target Accuracy", // Corrected Label
   analysisTime: "Analysis Time",
-  emailsAnalyzed: "Emails Analyzed",
+  emailsAnalyzed: "Community Reports", // Corrected Label
   advancedDetection: "Advanced Phishing Detection",
   advancedDetectionSubtitle:
     "Our AI model analyzes multiple indicators to provide comprehensive, real-time protection against phishing attacks.",
@@ -537,7 +537,7 @@ function Counter({ to }: { to: number }) {
 
   useEffect(() => {
     if (isInView && ref.current) {
-      animate(0, to, {
+      const controls = animate(0, to, {
         duration: 2,
         onUpdate(value) {
           if (ref.current) {
@@ -545,6 +545,7 @@ function Counter({ to }: { to: number }) {
           }
         },
       });
+      return () => controls.stop();
     }
   }, [isInView, to]);
 
@@ -772,11 +773,13 @@ function HeroSection() {
 
 function StatsSection() {
   const { t } = useAppContext();
+  const { recentScams } = useScam();
+
   const stats = [
     {
-      value: 97.5,
+      value: 95,
       label: t("detectionAccuracy"),
-      suffix: "%",
+      suffix: "%+",
       icon: Shield,
       color: "text-blue-400",
     },
@@ -789,9 +792,9 @@ function StatsSection() {
       color: "text-green-400",
     },
     {
-      value: 1000000,
-      label: t("emailsAnalyzed"),
-      suffix: "+",
+      value: recentScams.length,
+      label: t("emailsAnalyzed"), // This label key now points to "Community Reports"
+      suffix: "",
       icon: Users,
       color: "text-purple-400",
     },
@@ -1456,7 +1459,6 @@ function ReportScamSection() {
   );
 }
 
-// ✅ UPDATED: Blog Section to be functional and real-time
 const BlogPostSkeleton = () => (
   <div className="flex flex-col space-y-3">
     <Skeleton className="h-[200px] w-full rounded-xl" />
@@ -1467,49 +1469,66 @@ const BlogPostSkeleton = () => (
   </div>
 );
 
-function BlogSection() {
+function ResourceCenterSection() {
   const { t } = useAppContext();
+  const { recentScams } = useScam();
   const [posts, setPosts] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    // Simulate fetching data from an API
-    const fetchPosts = () => {
-      setIsLoading(true);
-      setTimeout(() => {
-        const newPosts = [
-          {
-            id: 1,
-            title: "The Rise of Deepfake Voice Scams",
-            excerpt:
-              "Learn how AI is being used to mimic voices and how to protect yourself from sophisticated deepfake scams.",
-            link: "/blog/deepfake-voice-scams",
-            image: `https://source.unsplash.com/random/800x600?technology,${Math.random()}`,
-          },
-          {
-            id: 2,
-            title: "Anatomy of an Ethio Telecom Impersonation Scam",
-            excerpt:
-              "We break down a recent SMS scam targeting mobile users in Ethiopia, detailing its tactics and how GuardSphere detects it.",
-            link: "/blog/ethio-telecom-impersonation",
-            image: `https://source.unsplash.com/random/800x600?security,${Math.random()}`,
-          },
-          {
-            id: 3,
-            title: "Understanding Phishing: The Basics",
-            excerpt:
-              "A foundational guide to identifying and avoiding common phishing attacks, from email to social media.",
-            link: "/blog/understanding-phishing",
-            image: `https://source.unsplash.com/random/800x600?hacker,${Math.random()}`,
-          },
-        ];
-        setPosts(newPosts);
-        setIsLoading(false);
-      }, 1500); // Simulate a 1.5-second network delay
-    };
+  // Function to get the current week number of the year
+  const getWeekNumber = (d: Date): number => {
+    d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    const weekNo = Math.ceil(((+d - +yearStart) / 86400000 + 1) / 7);
+    return weekNo;
+  };
 
-    fetchPosts();
-  }, []);
+  useEffect(() => {
+    setIsLoading(true);
+    setTimeout(() => {
+      // 1. Determine Scam of the Week from local, recent reports
+      const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+      const recentUserScams = recentScams.filter(
+        (scam) => scam.timestamp > oneWeekAgo
+      );
+
+      let scamOfTheWeek: any;
+
+      if (recentUserScams.length > 0) {
+        // Find the most reported scam type in the last week
+        const typeCounts = recentUserScams.reduce((acc, report) => {
+          acc[report.scamType] = (acc[report.scamType] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>);
+
+        const topScamType = Object.entries(typeCounts).sort(
+          (a, b) => b[1] - a[1]
+        )[0][0];
+
+        // Find a blog post that matches this type
+        scamOfTheWeek =
+          allBlogPosts.find((post) => post.type === topScamType) ||
+          allBlogPosts[0]; // Fallback
+        scamOfTheWeek.title = `Community Alert: ${scamOfTheWeek.title}`;
+      } else {
+        // 2. Fallback to weekly rotation if no recent user reports
+        const currentWeek = getWeekNumber(new Date());
+        const weeklyIndex = currentWeek % allBlogPosts.length;
+        scamOfTheWeek = allBlogPosts[weeklyIndex];
+        scamOfTheWeek.title = `Scam of the Week: ${scamOfTheWeek.title}`;
+      }
+
+      // 3. Get other random posts for the resource center
+      const otherPosts = allBlogPosts
+        .filter((post) => post.id !== scamOfTheWeek.id)
+        .sort(() => 0.5 - Math.random()) // Shuffle
+        .slice(0, 2); // Take the first two
+
+      setPosts([scamOfTheWeek, ...otherPosts]);
+      setIsLoading(false);
+    }, 1500); // Simulate network delay
+  }, [recentScams]); // Re-run when new scams are reported
 
   return (
     <section className="py-24 bg-white dark:bg-gray-900">
@@ -2073,7 +2092,7 @@ function HomePageContent() {
         <AboutSection />
         <TestimonialsSection />
         <ReportScamSection />
-        <BlogSection />
+        <ResourceCenterSection />
         <DomainMonitoringSection />
         <TeamSection />
         <ContactSection />
