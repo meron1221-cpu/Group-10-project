@@ -2,7 +2,7 @@
 
 import { useState, useMemo, createContext, useContext, ReactNode } from "react";
 import { Orbitron } from "next/font/google";
-import { useSession } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
 import Link from "next/link";
 import {
   ShieldCheck,
@@ -344,7 +344,11 @@ function Sidebar({
             Back to Main Site
           </Button>
         </Link>
-        <Button variant="destructive" className="w-full justify-start">
+        <Button
+          variant="destructive"
+          className="w-full justify-start"
+          onClick={() => signOut()}
+        >
           <LogOut className="mr-3 h-5 w-5" />
           Logout
         </Button>
