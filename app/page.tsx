@@ -1081,7 +1081,6 @@ function FeaturesSection() {
   );
 }
 
-// ✅ UPDATED: About Section with interactive SVG
 function AboutSection() {
   const { t } = useAppContext();
   const values = [
@@ -1201,7 +1200,6 @@ function AboutSection() {
   );
 }
 
-// ✅ UPDATED: Testimonials Section with reduced spacing
 function TestimonialsSection() {
   const { t } = useAppContext();
   const testimonials = [
@@ -1633,7 +1631,10 @@ function TeamSection() {
       bio: t("teamMember1Bio"),
       gender: "male",
       expertise: ["AI/ML", "NLP"],
-      social: { linkedin: "#", github: "#" },
+      social: {
+        linkedin: "#",
+        github: "https://github.com/Aphranm",
+      },
     },
     {
       name: t("teamMember2Name"),
@@ -1641,7 +1642,10 @@ function TeamSection() {
       bio: t("teamMember2Bio"),
       gender: "male",
       expertise: ["Backend", "penetration tester"],
-      social: { linkedin: "#", github: "#" },
+      social: {
+        linkedin: "#",
+        github: "https://github.com/Nahoo-Man",
+      },
     },
     {
       name: t("teamMember3Name"),
@@ -1649,16 +1653,20 @@ function TeamSection() {
       bio: t("teamMember3Bio"),
       gender: "male",
       expertise: ["Threat Analysis", "SOC"],
-      social: { linkedin: "#", github: "#" },
+      social: {
+        linkedin: "#",
+        github: "https://github.com/dave-zed",
+      },
     },
     {
       name: t("teamMember4Name"),
       role: t("teamMember4Role"),
       bio: t("teamMember4Bio"),
       gender: "female",
+      image: "/my.PNG", // Your photo path
       expertise: ["Ethical Hacking", "Security Audits"],
       social: {
-        linkedin: "#www.linkedin.com/in/meron-nisrane-1882b629b",
+        linkedin: "https://et.linkedin.com/in/meron-nisrane-1882b629b",
         github: "https://github.com/meron1221-cpu",
       },
     },
@@ -1668,7 +1676,10 @@ function TeamSection() {
       bio: t("teamMember5Bio"),
       gender: "male",
       expertise: ["Product", "UX/UI"],
-      social: { linkedin: "#", github: "#" },
+      social: {
+        linkedin: "https://et.linkedin.com/in/amanuel-mihrte-91a81537b",
+        github: "#",
+      },
     },
   ];
 
@@ -1692,7 +1703,7 @@ function TeamSection() {
           </div>
         </AnimatedSection>
         <div className="flex flex-wrap justify-center gap-8">
-          {teamMembers.map((member, index) => (
+          {teamMembers.map((member: any, index) => (
             <AnimatedSection key={index} className="w-full sm:w-2/5 lg:w-[30%]">
               <motion.div
                 className="h-full"
@@ -1701,18 +1712,28 @@ function TeamSection() {
               >
                 <Card className="h-full flex flex-col text-center bg-white dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 group transition-all duration-300 hover:shadow-xl hover:border-blue-400 dark:hover:border-blue-500">
                   <div className="relative mb-4 self-center">
-                    <motion.div
-                      className="text-7xl mb-4"
-                      animate={{ y: [0, -10, 0] }}
-                      transition={{
-                        duration: 3,
-                        ease: "easeInOut",
-                        repeat: Infinity,
-                        delay: index * 0.3,
-                      }}
-                    >
-                      {member.gender === "female" ? "👩‍💻" : "👨‍💻"}
-                    </motion.div>
+                    {member.image ? (
+                      <Image
+                        src={member.image}
+                        alt={member.name}
+                        width={100}
+                        height={100}
+                        className="rounded-full object-cover w-28 h-28 border-4 border-white dark:border-gray-800 shadow-lg"
+                      />
+                    ) : (
+                      <motion.div
+                        className="text-7xl mb-4"
+                        animate={{ y: [0, -10, 0] }}
+                        transition={{
+                          duration: 3,
+                          ease: "easeInOut",
+                          repeat: Infinity,
+                          delay: index * 0.3,
+                        }}
+                      >
+                        {member.gender === "female" ? "👩‍💻" : "👨‍💻"}
+                      </motion.div>
+                    )}
                   </div>
                   <CardTitle className="text-lg font-semibold text-gray-900 dark:text-white">
                     {member.name}
@@ -1725,7 +1746,7 @@ function TeamSection() {
                       {member.bio}
                     </p>
                     <div className="mt-4 flex flex-wrap justify-center gap-2">
-                      {member.expertise.map((skill) => (
+                      {member.expertise.map((skill: string) => (
                         <Badge
                           key={skill}
                           variant="secondary"
