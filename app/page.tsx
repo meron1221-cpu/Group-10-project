@@ -71,9 +71,9 @@ import { useEffect, useRef, useState, createContext, useContext } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { useSession, signIn, signOut, SessionProvider } from "next-auth/react";
-import { ThreatMap } from "@/app/admin/components/threat-map";
 import { Orbitron } from "next/font/google";
-import { allBlogPosts } from "@/lib/blog-data"; // Import from the new file
+import { allBlogPosts } from "@/lib/blog-data";
+import { useRouter } from "next/navigation";
 
 // Initialize the font
 const orbitron = Orbitron({
@@ -104,7 +104,7 @@ const enTranslations = {
   scamDescription: "Describe the Scam",
   scamScreenshot: "Upload Screenshot (Optional)",
   scamScreenshotHelper: "A picture of the message, email, or website.",
-  submitReport: "Submit Anonymously",
+  submitReport: "Submit for Review",
   noFileChosen: "No file chosen",
   // Testimonials
   testimonial1Quote: "GuardSphere is a game-changer. Highly recommended!",
@@ -262,7 +262,7 @@ const translations: Record<"en" | "am", typeof enTranslations> = {
     scamDescription: "ማጭበርበሩን ይግለጹ",
     scamScreenshot: "ቅጽበታዊ ገጽ እይታ ስቀል (አማራጭ)",
     scamScreenshotHelper: "የመልዕክቱ፣ የኢሜይሉ ወይም የድረ-ገጹ ምስል።",
-    submitReport: "ስም-አልባ አስገባ",
+    submitReport: "ለግምገማ አስገባ",
     noFileChosen: "ምንም ፋይል አልተመረጠም",
     // Testimonials
     testimonial1Quote: "GuardSphere በጣም አስደናቂ ነው። በጣም ይመከራል!",
@@ -412,8 +412,8 @@ interface ScamReport {
 }
 
 type ScamContextType = {
-  recentScams: ScamReport[];
-  addScamReport: (scam: Omit<ScamReport, "id" | "timestamp">) => void;
+  approvedScams: ScamReport[];
+  addPendingScam: (scam: Omit<ScamReport, "id" | "timestamp">) => void;
 };
 
 const ScamContext = createContext<ScamContextType | null>(null);
@@ -427,39 +427,37 @@ const useScam = () => {
 };
 
 function ScamProvider({ children }: { children: React.ReactNode }) {
-  const [recentScams, setRecentScams] = useState<ScamReport[]>([]);
+  const [approvedScams, setApprovedScams] = useState<ScamReport[]>([]);
 
   useEffect(() => {
     try {
-      const storedScams = localStorage.getItem("recentScams");
+      const storedScams = localStorage.getItem("approvedScams");
       if (storedScams) {
         const allScams: ScamReport[] = JSON.parse(storedScams);
         const twoDays = 48 * 60 * 60 * 1000;
         const freshScams = allScams.filter(
           (scam) => Date.now() - scam.timestamp < twoDays
         );
-        setRecentScams(freshScams);
+        setApprovedScams(freshScams);
       }
     } catch (err) {
-      console.error("Failed to load recent scams from localStorage", err);
+      console.error("Failed to load approved scams from localStorage", err);
     }
   }, []);
 
-  const addScamReport = (scam: Omit<ScamReport, "id" | "timestamp">) => {
+  const addPendingScam = (scam: Omit<ScamReport, "id" | "timestamp">) => {
     const newScam = { ...scam, id: Date.now(), timestamp: Date.now() };
-    setRecentScams((prevScams) => {
-      const updatedScams = [newScam, ...prevScams];
-      try {
-        localStorage.setItem("recentScams", JSON.stringify(updatedScams));
-      } catch (err) {
-        console.error("Failed to save recent scams to localStorage", err);
-      }
-      return updatedScams;
-    });
+    try {
+      const pending = JSON.parse(localStorage.getItem("pendingScams") || "[]");
+      const updatedPending = [newScam, ...pending];
+      localStorage.setItem("pendingScams", JSON.stringify(updatedPending));
+    } catch (err) {
+      console.error("Failed to save pending scam to localStorage", err);
+    }
   };
 
   return (
-    <ScamContext.Provider value={{ recentScams, addScamReport }}>
+    <ScamContext.Provider value={{ approvedScams, addPendingScam }}>
       {children}
     </ScamContext.Provider>
   );
@@ -637,12 +635,6 @@ function Header() {
                     <span>Sign in as User</span>
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/admin" className="cursor-pointer">
-                    <UserCog className="mr-2 h-4 w-4" />
-                    <span>Sign in as Admin</span>
-                  </Link>
-                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           )}
@@ -773,7 +765,7 @@ function HeroSection() {
 
 function StatsSection() {
   const { t } = useAppContext();
-  const { recentScams } = useScam();
+  const { approvedScams } = useScam();
 
   const stats = [
     {
@@ -792,7 +784,7 @@ function StatsSection() {
       color: "text-green-400",
     },
     {
-      value: recentScams.length,
+      value: approvedScams.length,
       label: t("emailsAnalyzed"), // This label key now points to "Community Reports"
       suffix: "",
       icon: Users,
@@ -930,7 +922,7 @@ function MoreScamsCard({
 
 function RecentScamsSection() {
   const { t } = useAppContext();
-  const { recentScams } = useScam();
+  const { approvedScams } = useScam();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [filter, setFilter] = useState("all");
 
@@ -944,7 +936,7 @@ function RecentScamsSection() {
     "Other",
   ];
 
-  const filteredScams = recentScams.filter(
+  const filteredScams = approvedScams.filter(
     (scam) => filter === "all" || scam.scamType === filter
   );
   const displayScams = filteredScams.slice(0, 3);
@@ -1279,7 +1271,7 @@ function TestimonialsSection() {
 
 function ReportScamSection() {
   const { t } = useAppContext();
-  const { addScamReport } = useScam();
+  const { addPendingScam } = useScam();
   const [scamType, setScamType] = useState("Phishing");
   const [description, setDescription] = useState("");
   const [screenshot, setScreenshot] = useState<File | null>(null);
@@ -1335,14 +1327,10 @@ function ReportScamSection() {
       }
     }
 
-    addScamReport({ scamType, description, screenshotUrl });
+    addPendingScam({ scamType, description, screenshotUrl });
 
-    const pointsEarned = 10;
-    toast.success("Thank you! Your report has been submitted.", {
-      description: t("earnedPoints").replace(
-        "{points}",
-        pointsEarned.toString()
-      ),
+    toast.success("Thank you! Your report has been submitted for review.", {
+      description: "You've earned 10 Guardian Points for your contribution!",
       icon: <Award className="h-5 w-5 text-yellow-500" />,
     });
 
@@ -1469,7 +1457,7 @@ const BlogPostSkeleton = () => (
 
 function ResourceCenterSection() {
   const { t } = useAppContext();
-  const { recentScams } = useScam();
+  const { approvedScams } = useScam();
   const [posts, setPosts] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -1487,7 +1475,7 @@ function ResourceCenterSection() {
     setTimeout(() => {
       // 1. Determine Scam of the Week from local, recent reports
       const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-      const recentUserScams = recentScams.filter(
+      const recentUserScams = approvedScams.filter(
         (scam) => scam.timestamp > oneWeekAgo
       );
 
@@ -1526,7 +1514,7 @@ function ResourceCenterSection() {
       setPosts([scamOfTheWeek, ...otherPosts]);
       setIsLoading(false);
     }, 1500); // Simulate network delay
-  }, [recentScams]); // Re-run when new scams are reported
+  }, [approvedScams]); // Re-run when approved scams change
 
   return (
     <section className="py-24 bg-white dark:bg-gray-900">
@@ -1663,7 +1651,7 @@ function TeamSection() {
       role: t("teamMember4Role"),
       bio: t("teamMember4Bio"),
       gender: "female",
-      image: "/my.PNG", // Your photo path
+      image: "/my.PNG",
       expertise: ["Ethical Hacking", "Security Audits"],
       social: {
         linkedin: "https://et.linkedin.com/in/meron-nisrane-1882b629b",
@@ -2100,6 +2088,21 @@ function Footer() {
 // --- MAIN PAGE COMPONENT ---
 
 function HomePageContent() {
+  const router = useRouter();
+
+  useEffect(() => {
+    const handleSecretShortcut = (e: KeyboardEvent) => {
+      // Secret combo: Ctrl + Alt + A
+      if (e.ctrlKey && e.altKey && e.key.toLowerCase() === "a") {
+        e.preventDefault();
+        router.push("/admin/login");
+      }
+    };
+
+    window.addEventListener("keydown", handleSecretShortcut);
+    return () => window.removeEventListener("keydown", handleSecretShortcut);
+  }, [router]);
+
   return (
     <div
       className={`min-h-screen bg-gray-50 text-gray-800 dark:bg-gray-900 dark:text-gray-300 transition-colors duration-300 ${orbitron.className}`}

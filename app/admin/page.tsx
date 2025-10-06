@@ -1,7 +1,15 @@
 "use client";
 
 import { Orbitron } from "next/font/google";
-import { useState, useEffect, useMemo, createContext, useContext } from "react";
+import React, {
+  useState,
+  useEffect,
+  useMemo,
+  createContext,
+  useContext,
+  useCallback,
+  ReactNode,
+} from "react";
 import { format } from "date-fns";
 import { DateRange } from "react-day-picker";
 import { motion } from "framer-motion";
@@ -50,6 +58,9 @@ import {
   UserCheck,
   UserX,
   LucideProps,
+  MailQuestion,
+  ThumbsUp,
+  ThumbsDown,
 } from "lucide-react";
 import {
   Card,
@@ -145,6 +156,7 @@ const translations = {
     reports: "Reports",
     userManagement: "User Management",
     threatMap: "Threat Map",
+    incidentReview: "Incident Review",
     settings: "Settings",
     logout: "Log Out",
     // Dashboard View
@@ -259,6 +271,7 @@ const translations = {
     reports: "ሪፖርቶች",
     userManagement: "የተጠቃሚ አስተዳደር",
     threatMap: "የስጋት ካርታ",
+    incidentReview: "የክስተት ግምገማ",
     settings: "ቅንብሮች",
     logout: "ውጣ",
     // Dashboard View
@@ -372,10 +385,12 @@ const defaultSettings: SettingsType = {
   refreshInterval: "30s",
 };
 
-const SettingsContext = createContext<{
+interface SettingsContextType {
   settings: SettingsType;
   setSettings: React.Dispatch<React.SetStateAction<SettingsType>>;
-}>({
+}
+
+const SettingsContext = createContext<SettingsContextType>({
   settings: defaultSettings,
   setSettings: () => {},
 });
@@ -429,6 +444,14 @@ interface ManagedUser {
   riskLevel: "Low" | "Medium" | "High";
 }
 
+interface ScamReport {
+  id: number;
+  scamType: string;
+  description: string;
+  screenshotUrl?: string;
+  timestamp: number;
+}
+
 // --- LOGIN PAGE COMPONENT ---
 function LoginPage({ onLoginSuccess }: { onLoginSuccess: () => void }) {
   const [email, setEmail] = useState("");
@@ -436,7 +459,6 @@ function LoginPage({ onLoginSuccess }: { onLoginSuccess: () => void }) {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  // Use a temporary t function for the login page
   const t = (key: keyof (typeof translations)["en"]) =>
     translations["en"][key] || key;
 
@@ -507,6 +529,14 @@ function LoginPage({ onLoginSuccess }: { onLoginSuccess: () => void }) {
               )}
             </Button>
           </form>
+          <div className="mt-4 text-center text-sm">
+            <Link
+              href="/auth/login"
+              className="underline text-muted-foreground hover:text-primary"
+            >
+              Sign in as User
+            </Link>
+          </div>
         </CardContent>
       </Card>
     </div>
@@ -518,10 +548,12 @@ function Sidebar({
   activeView,
   setActiveView,
   onLogout,
+  pendingCount,
 }: {
   activeView: string;
   setActiveView: (view: string) => void;
   onLogout: () => void;
+  pendingCount: number;
 }) {
   const { t } = useTranslations();
 
@@ -530,6 +562,12 @@ function Sidebar({
     { key: "reports", icon: BarChart3, label: t("reports") },
     { key: "userManagement", icon: Users, label: t("userManagement") },
     { key: "threatMap", icon: Globe, label: t("threatMap") },
+    {
+      key: "incidentReview",
+      icon: MailQuestion,
+      label: "Incident Review",
+      count: pendingCount,
+    },
     { key: "settings", icon: Settings, label: t("settings") },
   ];
 
@@ -541,16 +579,21 @@ function Sidebar({
           <span className="text-2xl font-bold text-white">GuardSphere</span>
         </Link>
       </div>
-      <nav className="flex-1 px-4 py-6 space-y-2">
+      <nav className="flex-1 px-4 py-6 space-y-2" aria-label="Main navigation">
         {navItems.map((item) => (
           <button
             key={item.key}
             onClick={() => setActiveView(item.key)}
-            className="w-full flex items-center px-4 py-2.5 text-sm font-medium rounded-lg hover:bg-gray-800 hover:text-white transition-colors data-[active=true]:bg-blue-600 data-[active=true]:text-white"
+            className="w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium rounded-lg hover:bg-gray-800 hover:text-white transition-colors data-[active=true]:bg-blue-600 data-[active=true]:text-white"
             data-active={activeView === item.key}
           >
-            <item.icon className="h-5 w-5 mr-3" />
-            {item.label}
+            <div className="flex items-center">
+              <item.icon className="h-5 w-5 mr-3" />
+              {item.label}
+            </div>
+            {item.count !== undefined && item.count > 0 && (
+              <Badge variant="destructive">{item.count}</Badge>
+            )}
           </button>
         ))}
       </nav>
@@ -608,7 +651,7 @@ function KpiCard({
 // --- PROFESSIONAL VIEW COMPONENTS ---
 
 // --- ReportsView ---
-function ReportsView() {
+const MemoizedReportsView = React.memo(function ReportsView() {
   const { t } = useTranslations();
   const [date, setDate] = useState<DateRange | undefined>();
   const [reportType, setReportType] = useState<string>("");
@@ -764,7 +807,7 @@ function ReportsView() {
           <CardTitle>{t("generatedReports")}</CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
+          <Table aria-label="Generated reports table">
             <TableHeader>
               <TableRow>
                 <TableHead>{t("reportName")}</TableHead>
@@ -797,7 +840,7 @@ function ReportsView() {
       </Card>
     </div>
   );
-}
+});
 
 // --- UserFormDialog ---
 function UserFormDialog({
@@ -903,7 +946,7 @@ function UserFormDialog({
 }
 
 // --- UserManagementView ---
-function UserManagementView() {
+const MemoizedUserManagementView = React.memo(function UserManagementView() {
   const { t } = useTranslations();
   const [users, setUsers] = useState<ManagedUser[]>([
     {
@@ -1168,7 +1211,7 @@ function UserManagementView() {
                     </SelectContent>
                   </Select>
                 </div>
-                <Table>
+                <Table aria-label="User management table">
                   <TableHeader>
                     <TableRow>
                       <TableHead className="w-[50px]">
@@ -1366,7 +1409,7 @@ function UserManagementView() {
       />
     </>
   );
-}
+});
 
 // --- ThreatMapView ---
 const geoUrl =
@@ -1474,7 +1517,7 @@ const allThreats: Threat[] = [
   },
 ];
 
-function ThreatMapView() {
+const MemoizedThreatMapView = React.memo(function ThreatMapView() {
   const [threatTypeFilter, setThreatTypeFilter] = useState("all");
   const [severityFilter, setSeverityFilter] = useState("all");
   const [timeFilter, setTimeFilter] = useState([24]);
@@ -1527,7 +1570,6 @@ function ThreatMapView() {
           </h3>
         </div>
         <div className="flex-1 relative bg-grid-slate-700/[0.05]">
-          <div className="absolute inset-0 bg-gradient-to-b from-slate-900/50 to-slate-900" />
           <div className="animate-scanline"></div>
           <ComposableMap
             projection="geoMercator"
@@ -1717,10 +1759,10 @@ function ThreatMapView() {
       </div>
     </div>
   );
-}
+});
 
 // --- SettingsView ---
-function SettingsView() {
+const MemoizedSettingsView = React.memo(function SettingsView() {
   const { t } = useTranslations();
   const { settings, setSettings } = useContext(SettingsContext);
 
@@ -2078,31 +2120,27 @@ function SettingsView() {
       </Tabs>
     </div>
   );
-}
+});
 
 // --- DashboardView ---
-function DashboardView() {
+const MemoizedDashboardView = React.memo(function DashboardView() {
   const { t } = useTranslations();
   const { settings } = useContext(SettingsContext);
 
-  // Mock data fetching function
-  const refreshData = () => {
-    // In a real app, this would be an API call
+  const refreshData = useCallback(() => {
     console.log("Refreshing dashboard data...");
     toast.info("Dashboard data refreshed!");
-  };
+  }, []);
 
   useEffect(() => {
     if (settings.refreshInterval === "none") {
       return;
     }
-
     const intervalMs =
       parseInt(settings.refreshInterval.replace("s", "")) * 1000;
     const intervalId = setInterval(refreshData, intervalMs);
-
-    return () => clearInterval(intervalId); // Cleanup on component unmount or when interval changes
-  }, [settings.refreshInterval]);
+    return () => clearInterval(intervalId);
+  }, [settings.refreshInterval, refreshData]);
 
   const kpiData = [
     {
@@ -2135,7 +2173,6 @@ function DashboardView() {
     },
   ];
 
-  // FIX: useMemo to prevent re-calculation on every render, which causes the infinite loop
   const trendData = useMemo(
     () =>
       Array.from({ length: 7 }, (_, i) => {
@@ -2220,7 +2257,12 @@ function DashboardView() {
                 <Progress
                   value={category.value}
                   className="h-2"
-                  indicatorClassName={category.color}
+                  style={{
+                    backgroundColor: `var(--color-${category.color.replace(
+                      "bg-",
+                      ""
+                    )})`,
+                  }}
                 />
               </div>
             ))}
@@ -2310,7 +2352,7 @@ function DashboardView() {
       </div>
     </div>
   );
-}
+});
 
 // --- DIALOG COMPONENTS ---
 function ScanUrlDialog({
@@ -2501,71 +2543,222 @@ function ReportScamDialog({
   );
 }
 
+// --- ERROR BOUNDARY COMPONENT ---
+function ErrorBoundary({ children }: { children: React.ReactNode }) {
+  const [hasError, setHasError] = useState(false);
+
+  useEffect(() => {
+    const handleError = (error: ErrorEvent) => {
+      console.error("Error caught by boundary:", error);
+      setHasError(true);
+    };
+
+    window.addEventListener("error", handleError);
+    return () => window.removeEventListener("error", handleError);
+  }, []);
+
+  if (hasError) {
+    return (
+      <div className="flex items-center justify-center h-screen w-screen">
+        <div className="text-center">
+          <AlertTriangle className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
+          <h3 className="text-lg font-medium">Something went wrong</h3>
+          <Button onClick={() => window.location.reload()} className="mt-4">
+            Reload Page
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return <>{children}</>;
+}
+
 // --- MAIN DASHBOARD WRAPPER ---
 function DashboardContent({ onLogout }: { onLogout: () => void }) {
   const { t } = useTranslations();
-  // FIX: Use a language-independent key for the active view
   const [activeView, setActiveView] = useState("dashboard");
   const [isScanUrlOpen, setIsScanUrlOpen] = useState(false);
   const [isReportScamOpen, setIsReportScamOpen] = useState(false);
+  const [pendingScams, setPendingScams] = useState<ScamReport[]>([]);
+
+  useEffect(() => {
+    const storedPending = localStorage.getItem("pendingScams");
+    if (storedPending) {
+      setPendingScams(JSON.parse(storedPending));
+    }
+  }, []);
 
   const renderActiveView = () => {
     switch (activeView) {
       case "dashboard":
-        return <DashboardView />;
+        return <MemoizedDashboardView />;
       case "reports":
-        return <ReportsView />;
+        return <MemoizedReportsView />;
       case "userManagement":
-        return <UserManagementView />;
+        return <MemoizedUserManagementView />;
       case "threatMap":
-        return <ThreatMapView />;
+        return <MemoizedThreatMapView />;
+      case "incidentReview":
+        return (
+          <IncidentReviewView
+            pendingScams={pendingScams}
+            setPendingScams={setPendingScams}
+          />
+        );
       case "settings":
-        return <SettingsView />;
+        return <MemoizedSettingsView />;
       default:
-        return <DashboardView />;
+        return <MemoizedDashboardView />;
     }
   };
 
   return (
-    <div className={`min-h-screen flex bg-background ${orbitron.className}`}>
-      <Sidebar
-        activeView={activeView}
-        setActiveView={setActiveView}
-        onLogout={onLogout}
-      />
-      <main className="flex-1 flex flex-col">
-        <header className="bg-card/80 backdrop-blur-sm border-b border-border sticky top-0 z-30">
-          <div className="px-6 h-16 flex items-center justify-between">
-            <h1 className="text-xl font-semibold text-foreground">
-              {t(activeView as keyof typeof translations.en)}
-            </h1>
-            {activeView === "dashboard" && (
-              <div className="flex items-center space-x-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsScanUrlOpen(true)}
-                >
-                  <ScanLine className="h-4 w-4 mr-2" />
-                  {t("scanUrl")}
-                </Button>
-                <Button size="sm" onClick={() => setIsReportScamOpen(true)}>
-                  <Flag className="h-4 w-4 mr-2" />
-                  {t("reportScam")}
-                </Button>
-              </div>
-            )}
-          </div>
-        </header>
+    <ErrorBoundary>
+      <div className={`min-h-screen flex bg-background ${orbitron.className}`}>
+        <Sidebar
+          activeView={activeView}
+          setActiveView={setActiveView}
+          onLogout={onLogout}
+          pendingCount={pendingScams.length}
+        />
+        <main className="flex-1 flex flex-col">
+          <header className="bg-card/80 backdrop-blur-sm border-b border-border sticky top-0 z-30">
+            <div className="px-6 h-16 flex items-center justify-between">
+              <h1 className="text-xl font-semibold text-foreground">
+                {t(activeView as keyof typeof translations.en)}
+              </h1>
+              {activeView === "dashboard" && (
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsScanUrlOpen(true)}
+                  >
+                    <ScanLine className="h-4 w-4 mr-2" />
+                    {t("scanUrl")}
+                  </Button>
+                  <Button size="sm" onClick={() => setIsReportScamOpen(true)}>
+                    <Flag className="h-4 w-4 mr-2" />
+                    {t("reportScam")}
+                  </Button>
+                </div>
+              )}
+            </div>
+          </header>
 
-        {renderActiveView()}
-      </main>
-      <Toaster richColors position="top-right" />
-      <ScanUrlDialog open={isScanUrlOpen} onOpenChange={setIsScanUrlOpen} />
-      <ReportScamDialog
-        open={isReportScamOpen}
-        onOpenChange={setIsReportScamOpen}
-      />
+          {renderActiveView()}
+        </main>
+        <Toaster richColors position="top-right" />
+        <ScanUrlDialog open={isScanUrlOpen} onOpenChange={setIsScanUrlOpen} />
+        <ReportScamDialog
+          open={isReportScamOpen}
+          onOpenChange={setIsReportScamOpen}
+        />
+      </div>
+    </ErrorBoundary>
+  );
+}
+
+// --- NEW: IncidentReviewView ---
+function IncidentReviewView({
+  pendingScams,
+  setPendingScams,
+}: {
+  pendingScams: ScamReport[];
+  setPendingScams: React.Dispatch<React.SetStateAction<ScamReport[]>>;
+}) {
+  const handleApprove = (scamId: number) => {
+    const scamToApprove = pendingScams.find((s) => s.id === scamId);
+    if (!scamToApprove) return;
+
+    // Add to approved list
+    const approved = JSON.parse(localStorage.getItem("approvedScams") || "[]");
+    const updatedApproved = [scamToApprove, ...approved];
+    localStorage.setItem("approvedScams", JSON.stringify(updatedApproved));
+
+    // Remove from pending list
+    const updatedPending = pendingScams.filter((s) => s.id !== scamId);
+    setPendingScams(updatedPending);
+    localStorage.setItem("pendingScams", JSON.stringify(updatedPending));
+
+    toast.success("Scam report approved and published.");
+  };
+
+  const handleReject = (scamId: number) => {
+    const updatedPending = pendingScams.filter((s) => s.id !== scamId);
+    setPendingScams(updatedPending);
+    localStorage.setItem("pendingScams", JSON.stringify(updatedPending));
+    toast.error("Scam report has been rejected and deleted.");
+  };
+
+  return (
+    <div className="flex-1 p-6 lg:p-8 space-y-8 animate-in fade-in-50 duration-500">
+      <Card>
+        <CardHeader>
+          <CardTitle>Incident Review Queue</CardTitle>
+          <CardDescription>
+            Review and moderate user-submitted scam reports.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Date</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Description</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {pendingScams.length > 0 ? (
+                pendingScams.map((scam) => (
+                  <TableRow key={scam.id}>
+                    <TableCell>
+                      {new Date(scam.timestamp).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="secondary">{scam.scamType}</Badge>
+                    </TableCell>
+                    <TableCell className="max-w-md truncate">
+                      {scam.description}
+                    </TableCell>
+                    <TableCell className="text-right space-x-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleReject(scam.id)}
+                        className="text-red-500 border-red-500 hover:bg-red-50"
+                      >
+                        <ThumbsDown className="mr-2 h-4 w-4" />
+                        Reject
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => handleApprove(scam.id)}
+                        className="bg-green-600 hover:bg-green-700"
+                      >
+                        <ThumbsUp className="mr-2 h-4 w-4" />
+                        Approve
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell
+                    colSpan={4}
+                    className="h-24 text-center text-muted-foreground"
+                  >
+                    The review queue is empty. Great job!
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </div>
   );
 }

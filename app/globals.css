@@ -167,3 +167,247 @@
     will-change: transform;
   }
 }
+/* ... your existing styles ... */
+
+/* ADD THESE NEW ANIMATION STYLES */
+@keyframes comet {
+  0% {
+    stroke-dashoffset: 100;
+    opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+}
+
+@keyframes ticker {
+  0% {
+    transform: translateX(100%);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+@keyframes pulse-strong {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.1);
+  }
+}
+
+.animate-comet {
+  stroke-dasharray: 100; /* Adjusted for better visual effect */
+  animation: comet 2s linear infinite;
+}
+
+.animate-ticker {
+  /* Ensure the element is wide enough for a seamless loop */
+  animation: ticker 40s linear infinite;
+}
+
+.animate-pulse-strong {
+  animation: pulse-strong 2s ease-in-out infinite;
+}
+
+.animate-scanline {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(34, 197, 94, 0.5),
+    transparent
+  );
+  animation: scanline 4s linear infinite;
+  will-change: transform;
+}
+
+@keyframes scanline {
+  0% {
+    transform: translateY(-10px);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(105%);
+    opacity: 0;
+  }
+}
+/* ... your existing styles ... */
+
+/* ADD THESE NEW ANIMATION STYLES */
+@keyframes comet {
+  0% {
+    stroke-dashoffset: 100;
+    opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+}
+
+@keyframes ticker {
+  0% {
+    transform: translateX(100%);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+@keyframes pulse-strong {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.1);
+  }
+}
+
+.animate-comet {
+  stroke-dasharray: 100; /* Adjusted for better visual effect */
+  animation: comet 2s linear infinite;
+}
+
+.animate-ticker {
+  /* Ensure the element is wide enough for a seamless loop */
+  animation: ticker 40s linear infinite;
+}
+
+.animate-pulse-strong {
+  animation: pulse-strong 2s ease-in-out infinite;
+}
+
+.animate-scanline {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(34, 197, 94, 0.5),
+    transparent
+  );
+  animation: scanline 4s linear infinite;
+  will-change: transform;
+}
+
+@keyframes scanline {
+  0% {
+    transform: translateY(-10px);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(105%);
+    opacity: 0;
+  }
+}
+/* ... your existing styles ... */
+
+/* ADD THESE NEW ANIMATION STYLES */
+@keyframes comet {
+  0% {
+    stroke-dashoffset: 100;
+    opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+}
+
+@keyframes ticker {
+  0% {
+    transform: translateX(100%);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+@keyframes pulse-strong {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.1);
+  }
+}
+
+.animate-comet {
+  stroke-dasharray: 100; /* Adjusted for better visual effect */
+  animation: comet 2s linear infinite;
+}
+
+.animate-ticker {
+  /* Ensures the animation continues off-screen */
+  animation: ticker 40s linear infinite;
+}
+
+.animate-pulse-strong {
+  animation: pulse-strong 2s ease-in-out infinite;
+}
+
+.animate-scanline::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(34, 197, 94, 0.5),
+    transparent
+  );
+  animation: scanline 4s linear infinite;
+  will-change: transform;
+}
+
+@keyframes scanline {
+  0% {
+    transform: translateY(-10px);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(105%);
+    opacity: 0;
+  }
+}
