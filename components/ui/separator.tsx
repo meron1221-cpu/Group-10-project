@@ -5,6 +5,17 @@ import * as SeparatorPrimitive from "@radix-ui/react-separator"
 
 import { cn } from "@/lib/utils"
 
+/**
+ * Separator component
+ * -------------------
+ * A wrapper around Radix UI's SeparatorPrimitive.
+ * Can be horizontal or vertical, and is primarily used
+ * to visually separate sections of a layout.
+ *
+ * Props:
+ * - orientation: "horizontal" | "vertical" (default: "horizontal")
+ * - decorative: boolean (default: true) - indicates if the separator is purely visual
+ */
 const Separator = React.forwardRef<
   React.ElementRef<typeof SeparatorPrimitive.Root>,
   React.ComponentPropsWithoutRef<typeof SeparatorPrimitive.Root>
