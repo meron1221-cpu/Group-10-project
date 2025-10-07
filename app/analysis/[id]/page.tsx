@@ -190,6 +190,7 @@ export default function ReportDetailPage() {
  * - Uses custom UI components like Card, Badge, and icons from Lucide.
  * - Supports dark/light mode styling and responsive layout.
  *
+ * *
  * Note:
  * - Replace `mockReportDetail` with real backend fetch using `params.id` in production.
  */
