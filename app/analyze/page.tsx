@@ -437,13 +437,11 @@ export default function AnalyzePage() {
               {result.indicators.map((indicator, index) => (
                 <div
                   key={index}
-                  className={`flex items-center justify-between rounded-lg border p-3 ${
-                    indicator.found
-                      ? `${getRiskColorClasses(indicator.severity).bg} ${
-                          getRiskColorClasses(indicator.severity).border
-                        }`
-                      : "bg-gray-50"
-                  }`}
+                  className={`flex items-center justify-between rounded-lg border p-3 ${indicator.found
+                    ? `${getRiskColorClasses(indicator.severity).bg} ${getRiskColorClasses(indicator.severity).border
+                    }`
+                    : "bg-gray-50"
+                    }`}
                 >
                   <div>
                     <p className="font-medium">{indicator.type}</p>
@@ -568,8 +566,8 @@ export default function AnalyzePage() {
           {result
             ? renderResults()
             : inputSource
-            ? renderInputForm()
-            : renderSourceSelector()}
+              ? renderInputForm()
+              : renderSourceSelector()}
         </div>
       </main>
     </div>
@@ -855,3 +853,4 @@ const performScamAnalysis = (payload: {
     recommendations,
   };
 };
+// End of AnalyzePage component – handles multi-input scam analysis with AI feedback
