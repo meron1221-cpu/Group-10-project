@@ -1,21 +1,56 @@
 {
+  // Specifies the JSON schema used to validate and provide IntelliSense for this config
   "$schema": "https://ui.shadcn.com/schema.json",
+
+  // Sets the overall UI style (you can switch themes like "default", "new-york", etc.)
   "style": "default",
+
+  // Enables React Server Components (RSC) compatibility for Next.js
+  // When true, generated components are optimized for Next.js server rendering
   "rsc": true,
+
+  // Indicates that components will be generated as TypeScript React (.tsx) files
   "tsx": true,
+
+  // Tailwind CSS-related configuration for shadcn UI
   "tailwind": {
+    // Path to your Tailwind configuration file
     "config": "tailwind.config.ts",
+
+    // Path to your main global CSS file where Tailwind’s base styles are imported
     "css": "app/globals.css",
+
+    // The default base color palette used by components (e.g., "neutral", "slate", "zinc")
     "baseColor": "neutral",
+
+    // Whether to use CSS variables for colors and design tokens
+    // This enables dynamic theming via custom properties (e.g., --background, --primary)
     "cssVariables": true,
+
+    // Prefix to apply to Tailwind class names (useful to avoid conflicts)
+    // Empty string means no prefix
     "prefix": ""
   },
+
+  // Path aliases used when generating imports for components, utilities, and hooks
   "aliases": {
+    // Maps "components" imports to "@/components" directory
     "components": "@/components",
+
+    // Maps "utils" imports to "@/lib/utils" (utility functions)
     "utils": "@/lib/utils",
+
+    // Maps "ui" imports to "@/components/ui" (UI-specific reusable components)
     "ui": "@/components/ui",
+
+    // Maps "lib" imports to "@/lib" (library/helper code)
     "lib": "@/lib",
+
+    // Maps "hooks" imports to "@/hooks" (custom React hooks)
     "hooks": "@/hooks"
   },
+
+  // Specifies which icon library shadcn will use for UI icons
+  // "lucide" is a clean, open-source icon set commonly used with shadcn
   "iconLibrary": "lucide"
 }
