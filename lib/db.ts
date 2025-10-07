@@ -39,40 +39,66 @@ function writeDB(data: Database) {
 }
 
 // --- Database Helper Functions ---
+export const db = {
+  user: {
+    findUnique: async ({
+      where: { email },
+    }: {
+      where: { email: string };
+    }): Promise<User | null> => {
+      const database = readDB();
+      return database.users.find((user) => user.email === email) || null;
+    },
 
-export function findUserByEmail(email: string): User | undefined {
-  const db = readDB();
-  return db.users.find((user) => user.email === email);
-}
+    findFirst: async ({
+      where: { resetToken },
+    }: {
+      where: { resetToken: string };
+    }): Promise<User | null> => {
+      const database = readDB();
+      return (
+        database.users.find(
+          (user) =>
+            user.resetToken === resetToken &&
+            user.resetTokenExpiry &&
+            new Date(user.resetTokenExpiry) > new Date()
+        ) || null
+      );
+    },
 
-export function createUser(newUser: Omit<User, "id">): User {
-  const db = readDB();
-  // Initialize points for new users
-  const user = { ...newUser, id: `user-${Date.now()}`, points: 0 }; // <--- INITIALIZE POINTS
-  db.users.push(user);
-  writeDB(db);
-  return user;
-}
+    create: async ({
+      data,
+    }: {
+      data: { username: string; email: string; hashedPassword?: string };
+    }): Promise<User> => {
+      const database = readDB();
+      const user: User = {
+        ...data,
+        id: `user-${Date.now()}`,
+        points: 0,
+      };
+      database.users.push(user);
+      writeDB(database);
+      return user;
+    },
 
-// --- NEW: Function to update user points ---
-export function updateUserPoints(
-  userId: string,
-  pointsToAdd: number
-): User | undefined {
-  const db = readDB();
-  const userIndex = db.users.findIndex((user) => user.id === userId);
-  if (userIndex > -1) {
-    db.users[userIndex].points =
-      (db.users[userIndex].points || 0) + pointsToAdd;
-    writeDB(db);
-    return db.users[userIndex];
-  }
-  return undefined;
-}
-
-// --- NEW: Function to get all users (for leaderboard) ---
-export function getAllUsers(): User[] {
-  const db = readDB();
-  return db.users;
-}
-// End of simple file-based database helper functions
+    update: async ({
+      where: { email },
+      data,
+    }: {
+      where: { email: string };
+      data: Partial<Omit<User, "id" | "email">>;
+    }): Promise<User | null> => {
+      const database = readDB();
+      const userIndex = database.users.findIndex(
+        (user) => user.email === email
+      );
+      if (userIndex > -1) {
+        database.users[userIndex] = { ...database.users[userIndex], ...data };
+        writeDB(database);
+        return database.users[userIndex];
+      }
+      return null;
+    },
+  },
+};
