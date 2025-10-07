@@ -1,33 +1,69 @@
 {
+  // Compiler configuration options for TypeScript
   "compilerOptions": {
+
+    // Specify built-in libraries available during compilation
+    // 'dom' → for browser APIs, 'dom.iterable' → for iterable DOM objects, 'esnext' → latest ECMAScript features
     "lib": ["dom", "dom.iterable", "esnext"],
+
+    // Allow JavaScript files (.js) to be compiled along with TypeScript files
     "allowJs": true,
+
+    // ECMAScript target version (ES6 means it compiles to modern JavaScript syntax)
     "target": "ES6",
+
+    // Skip type checking of declaration files (.d.ts) to speed up compilation
     "skipLibCheck": true,
+
+    // Enable strict type-checking for more reliable, error-free code
     "strict": true,
+
+    // Do not emit output files (useful for projects like Next.js that handle building themselves)
     "noEmit": true,
+
+    // Allow default imports from CommonJS modules without needing `import * as ...`
     "esModuleInterop": true,
+
+    // Specifies the module system to use — 'esnext' means it uses ES modules
     "module": "esnext",
+
+    // How modules are resolved — 'bundler' lets Next.js and modern bundlers handle resolution efficiently
     "moduleResolution": "bundler",
+
+    // Allow importing JSON files directly as modules
     "resolveJsonModule": true,
+
+    // Ensures each file is treated as an isolated module (required for Next.js)
     "isolatedModules": true,
+
+    // Preserve JSX as-is for tools like Next.js or Babel to handle later
     "jsx": "preserve",
+
+    // Enables faster incremental builds by caching previous build information
     "incremental": true,
+
+    // Specify plugins for additional compiler features — here it uses the Next.js plugin
     "plugins": [
       {
         "name": "next"
       }
     ],
+
+    // Define custom import path aliases — '@/*' maps to the project root
     "paths": {
       "@/*": ["./*"]
     }
   },
+
+  // Files and folders to include in compilation
   "include": [
-    "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
-    ".next/types/**/*.ts",
-    "types/**/*.ts"
+    "next-env.d.ts",        // Next.js environment types
+    "**/*.ts",              // All TypeScript files
+    "**/*.tsx",             // All TypeScript React files
+    ".next/types/**/*.ts",  // Generated Next.js type files
+    "types/**/*.ts"         // Custom types directory
   ],
-  "exclude": ["node_modules"]
+
+  // Files and folders to exclude from compilation
+  "exclude": ["node_modules"] // Exclude third-party dependencies for faster builds
 }
