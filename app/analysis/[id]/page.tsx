@@ -177,3 +177,19 @@ export default function ReportDetailPage() {
   );
 }
 // End of ReportDetailPage component
+/**
+ * ReportDetailPage Component
+ * --------------------------
+ * A client-side page that displays detailed analysis of a community-reported scam.
+ *
+ * Features:
+ * - Fetches report details using `useParams` (currently uses mock data for demonstration).
+ * - Displays overall report summary, detected category, and risk level.
+ * - Highlights AI-detected phishing indicators with explanations.
+ * - Provides recommended protective actions for the user.
+ * - Uses custom UI components like Card, Badge, and icons from Lucide.
+ * - Supports dark/light mode styling and responsive layout.
+ *
+ * Note:
+ * - Replace `mockReportDetail` with real backend fetch using `params.id` in production.
+ */
