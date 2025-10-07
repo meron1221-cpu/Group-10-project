@@ -82,8 +82,8 @@ export default function ReportDetailPage() {
     report.riskLevel === "high"
       ? "text-red-600 border-red-200"
       : report.riskLevel === "medium"
-      ? "text-yellow-600 border-yellow-200"
-      : "text-green-600 border-green-200";
+        ? "text-yellow-600 border-yellow-200"
+        : "text-green-600 border-green-200";
 
   return (
     <div
@@ -176,3 +176,4 @@ export default function ReportDetailPage() {
     </div>
   );
 }
+// End of ReportDetailPage component
