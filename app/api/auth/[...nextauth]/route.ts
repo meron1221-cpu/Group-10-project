@@ -1,14 +1,14 @@
-import NextAuth, { AuthOptions } from "next-auth";
+import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { findUserByEmail } from "@/lib/db";
-import bcrypt from "bcrypt";
+import { db } from "@/lib/db";
+import bcrypt from "bcryptjs";
 
-export const authOptions: AuthOptions = {
+const handler = NextAuth({
   providers: [
     CredentialsProvider({
       name: "Credentials",
       credentials: {
-        email: { label: "Email", type: "text" },
+        email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
@@ -16,24 +16,24 @@ export const authOptions: AuthOptions = {
           return null;
         }
 
-        // Find the user in our mock database
-        const user = findUserByEmail(credentials.email);
+        const user = await db.user.findUnique({
+          where: { email: credentials.email },
+        });
 
-        if (!user || !user.hashedPassword) {
-          return null;
+        if (
+          user &&
+          user.hashedPassword &&
+          (await bcrypt.compare(credentials.password, user.hashedPassword))
+        ) {
+          // Return the user object to be included in the session
+          return {
+            id: user.id,
+            name: user.username,
+            email: user.email,
+          };
         }
 
-        // Check if the password is correct
-        const isPasswordCorrect = await bcrypt.compare(
-          credentials.password,
-          user.hashedPassword
-        );
-
-        if (isPasswordCorrect) {
-          // Return user object to be encoded in the JWT
-          return { id: user.id, email: user.email };
-        }
-
+        // Return null if user not found or password doesn't match
         return null;
       },
     }),
@@ -44,26 +44,23 @@ export const authOptions: AuthOptions = {
   session: {
     strategy: "jwt",
   },
-  // Callbacks are essential for adding the user ID to the session
   callbacks: {
     async jwt({ token, user }) {
-      // On sign-in, the `user` object is available. Add its ID to the token.
       if (user) {
         token.id = user.id;
+        token.name = user.name;
       }
       return token;
     },
     async session({ session, token }) {
-      // Add the ID from the token to the session object, making it available on the client.
       if (session.user) {
         session.user.id = token.id as string;
+        session.user.name = token.name;
       }
       return session;
     },
   },
-  secret: process.env.NEXTAUTH_SECRET, // Make sure to set this in your .env file
-};
-
-const handler = NextAuth(authOptions);
+  secret: process.env.NEXTAUTH_SECRET,
+});
 
 export { handler as GET, handler as POST };

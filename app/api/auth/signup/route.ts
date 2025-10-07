@@ -1,53 +1,44 @@
 import { NextResponse } from "next/server";
-import bcrypt from "bcrypt";
-import { findUserByEmail, createUser } from "@/lib/db";
+import { db } from "@/lib/db";
+import bcrypt from "bcryptjs";
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    const { email, password, confirmPassword } = body;
-
-    if (!email || !password || !confirmPassword) {
-      // FIX: Return a JSON object for the error
-      return NextResponse.json(
-        { message: "Missing required fields." },
-        { status: 400 }
-      );
-    }
+    const { username, email, password, confirmPassword } = await request.json();
 
     if (password !== confirmPassword) {
-      // FIX: Return a JSON object for the error
       return NextResponse.json(
         { message: "Passwords do not match." },
         { status: 400 }
       );
     }
 
-    // Check if the user already exists in our mock DB
-    const existingUser = findUserByEmail(email);
+    const existingUser = await db.user.findUnique({ where: { email } });
     if (existingUser) {
-      // FIX: Return a JSON object for the error
       return NextResponse.json(
         { message: "User with this email already exists." },
-        { status: 409 } // 409 Conflict is more appropriate here
+        { status: 409 }
       );
     }
 
-    const hashedPassword = await bcrypt.hash(password, 12);
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create the user in our mock DB
-    const user = createUser({
-      email,
-      hashedPassword,
+    await db.user.create({
+      data: {
+        username,
+        email,
+        hashedPassword,
+      },
     });
 
-    // Return the created user object as JSON on success
-    return NextResponse.json(user, { status: 201 });
+    return NextResponse.json(
+      { message: "User created successfully." },
+      { status: 201 }
+    );
   } catch (error) {
     console.error("SIGNUP_ERROR", error);
-    // FIX: Return a JSON object for server errors
     return NextResponse.json(
-      { message: "Internal Server Error" },
+      { message: "An unexpected error occurred." },
       { status: 500 }
     );
   }

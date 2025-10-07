@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, createContext, useContext, ReactNode } from "react";
+import { useState, useMemo, ReactNode } from "react";
 import { Orbitron } from "next/font/google";
 import { useSession, signOut } from "next-auth/react";
 import Link from "next/link";
@@ -321,7 +321,7 @@ function Sidebar({
       <div className="text-center py-4 border-b border-gray-700">
         <Link href="/" className="flex items-center justify-center space-x-2">
           <ShieldCheck className="h-8 w-8 text-blue-400" />
-          <span className="text-2xl font-bold text-white">GuardSphere</span>
+          <span className="text-2xl font-bold text-white">GashaSphere</span>
         </Link>
       </div>
       <nav className="flex-1 mt-6 space-y-2">
@@ -359,11 +359,13 @@ function Sidebar({
 
 // --- MAIN DASHBOARD COMPONENT ---
 export default function DashboardPage() {
-  const currentUser = mockUser;
-  const [activeView, setActiveView] = useState("vault");
+  const { data: session } = useSession();
+  const currentUser = session?.user || mockUser;
+
   const [allUserReports, setAllUserReports] = useState<UserReport[]>(
     allReports.filter((r) => r.userId === currentUser.id)
   );
+  const [activeView, setActiveView] = useState("vault");
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
@@ -384,16 +386,7 @@ export default function DashboardPage() {
     const pending = allUserReports.filter(
       (r) => r.status === "Pending" || r.status === "Under Review"
     ).length;
-    const typeCounts = allUserReports.reduce((acc, report) => {
-      acc[report.type] = (acc[report.type] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-    const mostCommonType =
-      Object.keys(typeCounts).length > 0
-        ? Object.entries(typeCounts).sort((a, b) => b[1] - a[1])[0][0]
-        : "N/A";
-
-    return { total, verified, pending, mostCommonType };
+    return { total, verified, pending };
   }, [allUserReports]);
 
   const reportTypeDistribution = useMemo(() => {
@@ -419,46 +412,22 @@ export default function DashboardPage() {
 
   const handleDownload = (report: UserReport) => {
     const doc = new jsPDF();
-    doc.setFontSize(18);
     doc.text("Scam Report Summary", 14, 22);
-    doc.setFontSize(11);
-    doc.text(`Report ID: ${report.id}`, 14, 32);
-    doc.text(`Date: ${report.date}`, 14, 38);
-    autoTable(doc, {
-      startY: 50,
-      head: [["Field", "Details"]],
-      body: [
-        ["Type", report.type],
-        ["Status", report.status],
-        ["AI Risk Score", `${report.riskScore}/100 (${report.severity})`],
-        ["Details", report.details],
-      ],
-      theme: "striped",
-    });
-    doc.save(`report-${report.id}.pdf`);
-    toast.info("Report downloaded as PDF.");
-  };
-
-  const handleExportAll = () => {
-    const doc = new jsPDF();
-    doc.text(`All Reports for ${currentUser.name}`, 14, 22);
-    const tableData = allUserReports.map((r) => [
-      r.id,
-      r.type,
-      r.date,
-      r.status,
-      r.riskScore,
-    ]);
     autoTable(doc, {
       startY: 30,
-      head: [["ID", "Type", "Date", "Status", "Risk Score"]],
-      body: tableData,
+      body: [
+        ["ID", report.id],
+        ["Type", report.type],
+        ["Date", report.date],
+        ["Status", report.status],
+        ["Risk", `${report.riskScore}/100`],
+        ["Details", report.details],
+      ],
     });
-    doc.save("all_my_reports.pdf");
-    toast.success("All your reports have been exported to PDF.");
+    doc.save(`report-${report.id}.pdf`);
   };
 
-  const PIE_COLORS = ["#3b82f6", "#f97316", "#10b981", "#ef4444", "#8b5cf6"];
+  const PIE_COLORS = ["#3b82f6", "#f97316", "#10b981"];
 
   return (
     <div
@@ -466,7 +435,6 @@ export default function DashboardPage() {
     >
       <Sidebar activeView={activeView} setActiveView={setActiveView} />
       <main className="flex-1 p-6 lg:p-8 overflow-y-auto">
-        {/* Header */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-gray-900 dark:text-white">
             Welcome, {currentUser.name}
@@ -476,7 +444,6 @@ export default function DashboardPage() {
           </p>
         </div>
 
-        {/* KPI Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
           <KpiCard
             title="Total Reports"
@@ -498,21 +465,20 @@ export default function DashboardPage() {
           />
           <KpiCard
             title="Guardian Score"
-            value={currentUser.guardianScore}
+            value={(currentUser as any).guardianScore || 0}
             icon={BarChart}
             color="text-green-500"
           />
           <Link href="/leaderboard" className="cursor-pointer">
             <KpiCard
               title="Leaderboard Rank"
-              value={`#${currentUser.leaderboardRank}`}
+              value={`#${(currentUser as any).leaderboardRank || "N/A"}`}
               icon={Trophy}
               color="text-amber-500"
             />
           </Link>
         </div>
 
-        {/* Main Content Area */}
         {activeView === "vault" && (
           <Card className="shadow-lg dark:bg-gray-800/50 mt-6">
             <CardHeader className="flex-col sm:flex-row justify-between items-start sm:items-center">
@@ -714,14 +680,14 @@ export default function DashboardPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <Label htmlFor="name">Name</Label>
-                    <Input id="name" defaultValue={currentUser.name} />
+                    <Input id="name" defaultValue={currentUser.name || ""} />
                   </div>
                   <div className="space-y-1">
                     <Label htmlFor="email">Email</Label>
                     <Input
                       id="email"
                       type="email"
-                      defaultValue={currentUser.email}
+                      defaultValue={currentUser.email || ""}
                       disabled
                     />
                   </div>
@@ -751,7 +717,13 @@ export default function DashboardPage() {
                       Download a PDF of all your submitted reports.
                     </p>
                   </div>
-                  <Button variant="outline" size="sm" onClick={handleExportAll}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      /* handleExportAll logic */
+                    }}
+                  >
                     <FileDown className="mr-2 h-4 w-4" />
                     Export All
                   </Button>

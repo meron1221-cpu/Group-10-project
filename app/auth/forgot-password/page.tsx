@@ -17,7 +17,6 @@ import { toast } from "sonner";
 import { Loader2, Mail, Shield, ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
 
-// --- FONT SETUP ---
 const orbitron = Orbitron({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700", "800", "900"],
@@ -36,25 +35,27 @@ export default function ForgotPasswordPage() {
     }
     setIsLoading(true);
 
-    // In a real application, you would make an API call here
-    // For demonstration, we'll simulate a network request
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      const response = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
 
-      // const response = await fetch('/api/auth/forgot-password', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ email }),
-      // });
+      const data = await response.json();
 
-      // if (!response.ok) {
-      //   throw new Error("Failed to send reset link. Please try again.");
-      // }
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to send reset link.");
+      }
+
+      toast.success("Reset link sent!", {
+        description: data.message,
+      });
 
       setIsSubmitted(true);
     } catch (error: any) {
       toast.error("An error occurred", {
-        description: error.message || "Could not send reset link.",
+        description: error.message,
       });
     } finally {
       setIsLoading(false);

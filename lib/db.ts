@@ -7,9 +7,12 @@ const dbPath = path.join(process.cwd(), "db.json");
 // Define the structure of our database and user
 interface User {
   id: string;
+  username: string;
   email: string;
   hashedPassword?: string;
-  points?: number; // <--- ADDED THIS LINE for gamification
+  points?: number;
+  resetToken?: string | null;
+  resetTokenExpiry?: Date | null;
 }
 
 interface Database {
@@ -19,10 +22,13 @@ interface Database {
 // Function to read all users from the JSON file
 function readDB(): Database {
   try {
+    if (!fs.existsSync(dbPath)) {
+      writeDB({ users: [] });
+      return { users: [] };
+    }
     const data = fs.readFileSync(dbPath, "utf-8");
     return JSON.parse(data) as Database;
   } catch (error) {
-    // If the file doesn't exist or is empty, return a default structure
     return { users: [] };
   }
 }
@@ -70,4 +76,3 @@ export function getAllUsers(): User[] {
   return db.users;
 }
 // End of simple file-based database helper functions
-//

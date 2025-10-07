@@ -19,7 +19,6 @@ import { toast } from "sonner";
 import { Loader2, LogIn, Shield } from "lucide-react";
 import { motion } from "framer-motion";
 
-// --- FONT SETUP ---
 const orbitron = Orbitron({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700", "800", "900"],
@@ -35,21 +34,26 @@ export default function LoginPage() {
     e.preventDefault();
     setIsLoading(true);
 
-    const result = await signIn("credentials", {
-      redirect: false,
-      email,
-      password,
-    });
-
-    setIsLoading(false);
-
-    if (result?.error) {
-      toast.error("Login Failed", {
-        description: "Invalid email or password. Please try again.",
+    try {
+      const result = await signIn("credentials", {
+        redirect: false,
+        email,
+        password,
       });
-    } else if (result?.ok) {
-      toast.success("Login Successful!");
-      router.push("/dashboard");
+
+      if (result?.error) {
+        toast.error("Login Failed", {
+          description: "Invalid email or password. Please try again.",
+        });
+      } else if (result?.ok) {
+        toast.success("Login Successful!");
+        // Use window.location for a hard redirect to ensure proper session loading
+        window.location.href = "/dashboard";
+      }
+    } catch (error) {
+      toast.error("An unexpected error occurred during login.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -69,7 +73,7 @@ export default function LoginPage() {
             </div>
             <CardTitle className="text-2xl">Welcome Back</CardTitle>
             <CardDescription>
-              Sign in to access your GuardSphere dashboard.
+              Sign in to access your GashaSphere dashboard.
             </CardDescription>
           </CardHeader>
           <CardContent>

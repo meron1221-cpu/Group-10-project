@@ -18,7 +18,6 @@ import { toast } from "sonner";
 import { Loader2, Shield, UserPlus } from "lucide-react";
 import { motion } from "framer-motion";
 
-// --- FONT SETUP ---
 const orbitron = Orbitron({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700", "800", "900"],
@@ -26,6 +25,7 @@ const orbitron = Orbitron({
 
 export default function SignUpPage() {
   const router = useRouter();
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -45,7 +45,7 @@ export default function SignUpPage() {
       const response = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, confirmPassword }),
+        body: JSON.stringify({ username, email, password, confirmPassword }),
       });
 
       const data = await response.json();
@@ -65,6 +65,7 @@ export default function SignUpPage() {
       toast.error("Sign-up failed", {
         description: error.message,
       });
+    } finally {
       setIsLoading(false);
     }
   };
@@ -85,11 +86,23 @@ export default function SignUpPage() {
             </div>
             <CardTitle className="text-2xl">Create an Account</CardTitle>
             <CardDescription>
-              Join GuardSphere and help protect the community.
+              Join GashaSphere and help protect the community.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="grid gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="username">Username</Label>
+                <Input
+                  id="username"
+                  type="text"
+                  placeholder="e.g., alexryder"
+                  required
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  disabled={isLoading}
+                />
+              </div>
               <div className="grid gap-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
