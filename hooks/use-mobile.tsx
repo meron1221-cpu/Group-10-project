@@ -4,6 +4,7 @@ import * as React from "react"
 // Uses a breakpoint of 768px (can be adjusted via MOBILE_BREAKPOINT constant).
 // Returns a boolean indicating whether the screen width is below the mobile breakpoint.
 // Updates automatically when the window is resized.
+// 
 const MOBILE_BREAKPOINT = 768
 
 export function useIsMobile() {
