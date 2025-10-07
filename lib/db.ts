@@ -69,3 +69,4 @@ export function getAllUsers(): User[] {
   const db = readDB();
   return db.users;
 }
+// End of simple file-based database helper functions
