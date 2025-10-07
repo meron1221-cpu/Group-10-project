@@ -1,3 +1,4 @@
+// Import necessary modules from Next.js and local analytics store
 import { type NextRequest, NextResponse } from "next/server"
 import { analyticsStore } from "@/lib/analytics-store"
 
@@ -159,19 +160,19 @@ function analyzeEmailContent(content: string) {
 
   const recommendations = isPhishing
     ? [
-        "Do not click any links in this email",
-        "Do not download any attachments",
-        "Do not provide any personal information",
-        "Report this email to your IT department or email provider",
-        "Delete this email immediately",
-        "If you've already clicked links, change your passwords immediately",
-      ]
+      "Do not click any links in this email",
+      "Do not download any attachments",
+      "Do not provide any personal information",
+      "Report this email to your IT department or email provider",
+      "Delete this email immediately",
+      "If you've already clicked links, change your passwords immediately",
+    ]
     : [
-        "This email appears safe, but always verify sender identity",
-        "Be cautious with any links or attachments",
-        "When in doubt, contact the sender through alternative means",
-        "Keep your security software updated",
-      ]
+      "This email appears safe, but always verify sender identity",
+      "Be cautious with any links or attachments",
+      "When in doubt, contact the sender through alternative means",
+      "Keep your security software updated",
+    ]
 
   return {
     isPhishing,
