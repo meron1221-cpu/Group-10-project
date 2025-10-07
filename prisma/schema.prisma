@@ -58,3 +58,6 @@ model Session {
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
+// Prisma schema defining database models for the GuardSphere app.
+// Includes User authentication models (for NextAuth.js) and ScamReport tracking.
+// Learn more about Prisma schemas: https://pris.ly/d/prisma-schema
