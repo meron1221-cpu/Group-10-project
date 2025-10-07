@@ -107,14 +107,14 @@ const enTranslations = {
   submitReport: "Submit for Review",
   noFileChosen: "No file chosen",
   // Testimonials
-  testimonial1Quote: "GuardSphere is a game-changer. Highly recommended!",
+  testimonial1Quote: "GashaSphere is a game-changer. Highly recommended!",
   testimonial1Name: "Sarah L.",
   testimonial1Role: "IT Manager, TechCorp",
   testimonial2Quote: "The peace of mind this tool provides is invaluable.",
   testimonial2Name: "Michael B.",
   testimonial2Role: "Small Business Owner",
   testimonial3Quote:
-    "GuardSphere is my first line of defense. Simple, powerful, and effective.",
+    "GashaSphere is my first line of defense. Simple, powerful, and effective.",
   testimonial3Name: "Jessica P.",
   testimonial3Role: "Freelance Developer",
   // Team Members
@@ -188,7 +188,7 @@ const enTranslations = {
     "Your emails are analyzed securely and never stored on our servers.",
   aboutTitle: "Forging a Safer Digital Frontier",
   aboutSubtitle:
-    "At GuardSphere, we're not just building software; we're building trust. Our mission is to democratize cybersecurity and empower everyone to navigate the digital world with confidence.",
+    "At GashaSphere, we're not just building software; we're building trust. Our mission is to democratize cybersecurity and empower everyone to navigate the digital world with confidence.",
   coreValues: "Our Core Values",
   value1Title: "Vigilance",
   value1Desc:
@@ -225,7 +225,7 @@ const enTranslations = {
   stayUpdatedDesc: "Get the latest cybersecurity news and product updates.",
   enterEmail: "Enter your email",
   go: "Go",
-  copyright: "GuardSphere. All rights reserved.",
+  copyright: "GashaSphere. All rights reserved.",
   // New for gamification
   guardianPoints: "Guardian Points",
   earnedPoints: "You've earned {points} Guardian Points!",
@@ -265,13 +265,13 @@ const translations: Record<"en" | "am", typeof enTranslations> = {
     submitReport: "ለግምገማ አስገባ",
     noFileChosen: "ምንም ፋይል አልተመረጠም",
     // Testimonials
-    testimonial1Quote: "GuardSphere በጣም አስደናቂ ነው። በጣም ይመከራል!",
+    testimonial1Quote: "GashaSphere በጣም አስደናቂ ነው። በጣም ይመከራል!",
     testimonial1Name: "ሣራ ኤል.",
     testimonial1Role: "የ IT ሥራ አስኪያጅ, TechCorp",
     testimonial2Quote: "ይህ መሳሪያ የሚሰጠው የአእምሮ ሰላም ዋጋ የማይተመን ነው።",
     testimonial2Name: "ሚካኤል ቢ.",
     testimonial2Role: "የአነስተኛ ንግድ ባለቤት",
-    testimonial3Quote: "GuardSphere የመጀመሪያው የመከላከያ መስመሬ ነው። ቀላል፣ ኃይለኛ እና ውጤታማ።",
+    testimonial3Quote: "GashaSphere የመጀመሪያው የመከላከያ መስመሬ ነው። ቀላል፣ ኃይለኛ እና ውጤታማ።",
     testimonial3Name: "ጄሲካ ፒ.",
     testimonial3Role: "ፍሪላንስ ገንቢ",
     // Team Members
@@ -334,7 +334,7 @@ const translations: Record<"en" | "am", typeof enTranslations> = {
     feature6Desc: "ኢሜይሎችዎ ደህንነቱ በተጠበቀ ሁኔታ ይመረመራሉ እና በአገልጋዮቻችን ላይ በጭራሽ አይቀመጡም።",
     aboutTitle: "ደህንነቱ የተጠበቀ ዲጂታል ድንበር መፍጠር",
     aboutSubtitle:
-      "በGuardSphere ላይ ሶፍትዌር ብቻ እየገነባን አይደለም፤ መተማመንን እየገነባን ነው። ተልእኳችን የሳይበር ደህንነትን ለሁሉም ማዳረስ እና ሁሉም ሰው በዲጂታል አለም ውስጥ በልበ ሙሉነት እንዲጓዝ ማስቻል ነው።",
+      "በGashaSphere ላይ ሶፍትዌር ብቻ እየገነባን አይደለም፤ መተማመንን እየገነባን ነው። ተልእኳችን የሳይበር ደህንነትን ለሁሉም ማዳረስ እና ሁሉም ሰው በዲጂታል አለም ውስጥ በልበ ሙሉነት እንዲጓዝ ማስቻል ነው።",
     coreValues: "የእኛ ዋና እሴቶች",
     value1Title: "ንቃት",
     value1Desc: "ከሳይበር ወንጀለኞች ቀድመን ለመቆየት ስጋቶችን እንከታተላለን፣ መከላከያዎችን ንቁ እናደርጋለን።",
@@ -366,7 +366,7 @@ const translations: Record<"en" | "am", typeof enTranslations> = {
     stayUpdatedDesc: "የቅርብ ጊዜዎቹን የሳይበር ደህንነት ዜናዎች እና የምርት ዝመናዎች ያግኙ።",
     enterEmail: "ኢሜይልዎን ያስገቡ",
     go: "ሂድ",
-    copyright: "GuardSphere. ሁሉም መብቶች የተጠበቁ ናቸው።",
+    copyright: "GashaSphere. ሁሉም መብቶች የተጠበቁ ናቸው።",
     // New for gamification
     guardianPoints: "የጠባቂ ነጥቦች",
     earnedPoints: "{points} የጠባቂ ነጥቦችን አግኝተዋል!",
@@ -570,7 +570,7 @@ function Header() {
         <Link href="/" className="flex items-center space-x-3">
           <Shield className="h-8 w-8 text-blue-600" />
           <span className="text-2xl font-bold text-gray-900 dark:text-white">
-            GuardSphere
+            GashaSphere
           </span>
         </Link>
         <nav className="hidden md:flex items-center space-x-8">
@@ -621,22 +621,9 @@ function Header() {
               </Button>
             </>
           ) : (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button>
-                  {t("signIn")}
-                  <ChevronDown className="ml-2 h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem asChild>
-                  <Link href="/auth/signup" className="cursor-pointer">
-                    <User className="mr-2 h-4 w-4" />
-                    <span>Sign in as User</span>
-                  </Link>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <Link href="/auth/signup">
+              <Button>{t("signIn")}</Button>
+            </Link>
           )}
 
           {/* Theme and Language Toggles */}
@@ -1936,7 +1923,7 @@ function Footer() {
           <div>
             <div className="flex items-center space-x-2 mb-4">
               <Shield className="h-6 w-6 text-blue-400" />
-              <span className="text-xl font-bold">GuardSphere</span>
+              <span className="text-xl font-bold">GashaSphere</span>
             </div>
             <p className="text-gray-400">{t("footerSlogan")}</p>
           </div>
