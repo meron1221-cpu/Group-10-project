@@ -1,13 +1,12 @@
 "use client";
 
-import { useState, useMemo, useEffect, ReactNode } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Orbitron } from "next/font/google";
 import { useSession, SessionProvider } from "next-auth/react";
 import Link from "next/link";
 import {
   Trophy,
   Award,
-  User,
   ArrowLeft,
   Shield,
   RefreshCw,
@@ -53,7 +52,7 @@ function LeaderboardPageContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchLeaderboard = async () => {
+  const fetchLeaderboard = useCallback(async () => {
     setLoading(true);
     try {
       const response = await fetch("/api/leaderboard");
@@ -74,13 +73,13 @@ function LeaderboardPageContent() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchLeaderboard();
-    const interval = setInterval(fetchLeaderboard, 30000); // Poll every 30 seconds for real-time updates
+    const interval = setInterval(fetchLeaderboard, 30000); // Poll every 30 seconds
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchLeaderboard]);
 
   const currentUserRank = leaderboard.find(
     (user) => user.id === session?.user?.id
@@ -209,7 +208,6 @@ function LeaderboardPageContent() {
   );
 }
 
-// The final default export wraps the page content with the SessionProvider
 export default function LeaderboardPage() {
   return (
     <SessionProvider>
