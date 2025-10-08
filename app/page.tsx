@@ -1498,6 +1498,7 @@ function TeamSection() {
       role: t("teamMember3Role"),
       bio: t("teamMember3Bio"),
       gender: "male",
+      image: "/dave.jpg",
       expertise: ["Threat Analysis", "SOC"],
       social: {
         linkedin: "#",
