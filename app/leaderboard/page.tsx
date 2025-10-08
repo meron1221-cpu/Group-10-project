@@ -1,7 +1,17 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Trophy, Award, User, ArrowLeft, Shield } from "lucide-react";
+import { useState, useMemo, useEffect, ReactNode } from "react";
+import { Orbitron } from "next/font/google";
+import { useSession, SessionProvider } from "next-auth/react";
+import Link from "next/link";
+import {
+  Trophy,
+  Award,
+  User,
+  ArrowLeft,
+  Shield,
+  RefreshCw,
+} from "lucide-react";
 import {
   Card,
   CardContent,
@@ -17,16 +27,35 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
-// 1. Import the Orbitron font
-import { Orbitron } from "next/font/google";
-
-// 2. Initialize the font with desired weights
+// --- FONT SETUP ---
 const orbitron = Orbitron({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700", "800", "900"],
+  variable: "--font-orbitron",
 });
+
+// --- GLOBAL CSS FOR ORBITRON ---
+const GlobalStyle = () => (
+  <style jsx global>{`
+    :root {
+      --font-orbitron: ${orbitron.style.fontFamily};
+    }
+    html,
+    body,
+    * {
+      font-family: var(--font-orbitron), sans-serif !important;
+    }
+    /* Ensure UI components use Orbitron */
+    .ui-card,
+    .ui-button,
+    .ui-table {
+      font-family: var(--font-orbitron), sans-serif !important;
+    }
+  `}</style>
+);
 
 interface LeaderboardUser {
   id: string;
@@ -37,95 +66,51 @@ interface LeaderboardUser {
   rank?: number;
 }
 
-export default function LeaderboardPage() {
+// --- MAIN PAGE CONTENT COMPONENT ---
+function LeaderboardPageContent() {
+  const { data: session } = useSession();
   const [leaderboard, setLeaderboard] = useState<LeaderboardUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchLeaderboard = async () => {
-      setLoading(true);
-      try {
-        const mockUsers = [
-          {
-            id: "user-1",
-            name: "Aphran Mohammed",
-            email: "aphran@example.com",
-            points: 1500,
-            reports: 150,
-          },
-          {
-            id: "user-2",
-            name: "Nahom Bekele",
-            email: "nahom@example.com",
-            points: 1200,
-            reports: 120,
-          },
-          {
-            id: "user-3",
-            name: "Meron Nisrane",
-            email: "meron@example.com",
-            points: 950,
-            reports: 95,
-          },
-          {
-            id: "user-4",
-            name: "Dawit Addis",
-            email: "dawit@example.com",
-            points: 800,
-            reports: 80,
-          },
-          {
-            id: "user-5",
-            name: "Amanuel",
-            email: "amanuel@example.com",
-            points: 700,
-            reports: 70,
-          },
-          {
-            id: "user-6",
-            name: "User Six",
-            email: "user6@example.com",
-            points: 500,
-            reports: 50,
-          },
-          {
-            id: "user-7",
-            name: "User Seven",
-            email: "user7@example.com",
-            points: 300,
-            reports: 30,
-          },
-          {
-            id: "user-8",
-            name: "User Eight",
-            email: "user8@example.com",
-            points: 100,
-            reports: 10,
-          },
-        ];
-
-        const sortedLeaderboard = mockUsers
-          .sort((a, b) => b.points - a.points)
-          .map((user, index) => ({ ...user, rank: index + 1 }));
-
-        setLeaderboard(sortedLeaderboard);
-      } catch (err) {
-        console.error("Failed to fetch leaderboard:", err);
-        setError("Could not load leaderboard data.");
-      } finally {
-        setLoading(false);
+  const fetchLeaderboard = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch("/api/leaderboard");
+      if (!response.ok) {
+        throw new Error("Failed to fetch leaderboard data");
       }
-    };
+      const data: LeaderboardUser[] = await response.json();
 
+      const sortedLeaderboard = data
+        .sort((a, b) => b.points - a.points)
+        .map((user, index) => ({ ...user, rank: index + 1 }));
+
+      setLeaderboard(sortedLeaderboard);
+    } catch (err) {
+      console.error("Failed to fetch leaderboard:", err);
+      setError("Could not load leaderboard data.");
+      toast.error("Failed to load leaderboard. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchLeaderboard();
+    const interval = setInterval(fetchLeaderboard, 30000); // Poll every 30 seconds for real-time updates
+    return () => clearInterval(interval);
   }, []);
 
+  const currentUserRank = leaderboard.find(
+    (user) => user.id === session?.user?.id
+  )?.rank;
+
   return (
-    // 3. Apply the font's className to the main container div
     <div
-      className={`min-h-screen bg-gray-50 dark:bg-gray-900 py-12 ${orbitron.className}`}
+      className={`min-h-screen bg-gray-50 dark:bg-gray-900 py-12 ${orbitron.variable}`}
     >
+      <GlobalStyle />
       <header className="sticky top-0 z-10 border-b bg-white/80 backdrop-blur-sm dark:bg-gray-900/80 dark:border-gray-800">
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
           <Link
@@ -138,10 +123,27 @@ export default function LeaderboardPage() {
           <div className="flex items-center gap-2">
             <Shield className="h-7 w-7 text-blue-600" />
             <span className="text-xl font-bold text-gray-800 dark:text-white">
-              GuardSphere
+              GashaSphere
             </span>
           </div>
-          <div className="w-20" /> {/* Spacer */}
+          <div className="flex items-center gap-4">
+            {currentUserRank && (
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                Your Rank: #{currentUserRank}
+              </div>
+            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={fetchLeaderboard}
+              disabled={loading}
+              className="ui-button"
+            >
+              <RefreshCw
+                className={`h-5 w-5 ${loading ? "animate-spin" : ""}`}
+              />
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -164,13 +166,13 @@ export default function LeaderboardPage() {
         ) : error ? (
           <div className="text-center text-red-500">{error}</div>
         ) : (
-          <Card className="max-w-4xl mx-auto shadow-lg dark:bg-gray-800/50">
+          <Card className="max-w-4xl mx-auto shadow-lg dark:bg-gray-800/50 ui-card">
             <CardHeader>
               <CardTitle>Leaderboard</CardTitle>
               <CardDescription>Ranked by Guardian Points</CardDescription>
             </CardHeader>
             <CardContent>
-              <Table>
+              <Table className="ui-table">
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-[80px]">Rank</TableHead>
@@ -181,7 +183,14 @@ export default function LeaderboardPage() {
                 </TableHeader>
                 <TableBody>
                   {leaderboard.map((user) => (
-                    <TableRow key={user.id}>
+                    <TableRow
+                      key={user.id}
+                      className={
+                        user.id === session?.user?.id
+                          ? "bg-blue-50 dark:bg-blue-900/30"
+                          : ""
+                      }
+                    >
                       <TableCell className="font-bold text-lg">
                         {user.rank === 1 && (
                           <Award className="inline-block h-5 w-5 text-yellow-500 mr-1" />
@@ -218,5 +227,14 @@ export default function LeaderboardPage() {
         )}
       </main>
     </div>
+  );
+}
+
+// The final default export wraps the page content with the SessionProvider
+export default function LeaderboardPage() {
+  return (
+    <SessionProvider>
+      <LeaderboardPageContent />
+    </SessionProvider>
   );
 }
