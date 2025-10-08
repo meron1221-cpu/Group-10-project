@@ -1,15 +1,10 @@
 import { NextResponse } from "next/server";
-import { getAllUsers } from "@/lib/db";
+import { db } from "@/lib/db";
 
 export async function GET() {
   try {
     // In a real application, you might want to add pagination
-    const users: {
-      id: string;
-      username: string;
-      email: string;
-      points?: number;
-    }[] = getAllUsers();
+    const users = await db.user.findMany();
 
     // Sort users by points in descending order and add a rank
     const leaderboard = users

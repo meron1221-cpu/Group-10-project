@@ -100,5 +100,10 @@ export const db = {
       }
       return null;
     },
+
+    findMany: async (): Promise<User[]> => {
+      const database = readDB();
+      return database.users;
+    },
   },
 };
