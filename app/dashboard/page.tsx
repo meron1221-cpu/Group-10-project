@@ -93,9 +93,37 @@ import { Skeleton } from "@/components/ui/skeleton";
 const orbitron = Orbitron({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700", "800", "900"],
+  variable: "--font-orbitron",
 });
 
-// --- TYPES & MOCK DATA ---
+// --- GLOBAL CSS FOR ORBITRON ---
+const GlobalStyle = () => (
+  <style jsx global>{`
+    :root {
+      --font-orbitron: ${orbitron.style.fontFamily};
+    }
+    html,
+    body,
+    * {
+      font-family: var(--font-orbitron), sans-serif !important;
+    }
+    /* Ensure UI components use Orbitron */
+    .ui-card,
+    .ui-button,
+    .ui-table,
+    .ui-input,
+    .ui-select,
+    .ui-badge,
+    .ui-tabs,
+    .ui-switch,
+    .ui-textarea,
+    .ui-dialog {
+      font-family: var(--font-orbitron), sans-serif !important;
+    }
+  `}</style>
+);
+
+// --- TYPES ---
 interface UserReport {
   id: string;
   userId: string;
@@ -107,6 +135,7 @@ interface UserReport {
   severity: "Low" | "Medium" | "High";
 }
 
+// Mock data (for testing without a backend)
 const allReports: UserReport[] = [
   {
     id: "rep-001",
@@ -144,7 +173,7 @@ function KpiCard({
   color: string;
 }) {
   return (
-    <Card className="shadow-md dark:bg-gray-800/50 transition-transform hover:scale-105">
+    <Card className="shadow-md dark:bg-gray-800/50 transition-transform hover:scale-105 ui-card">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium text-gray-500 dark:text-gray-400">
           {title}
@@ -162,20 +191,23 @@ const getStatusBadge = (status: UserReport["status"]) => {
   switch (status) {
     case "Verified Scam":
       return (
-        <Badge variant="destructive" className="flex items-center gap-1">
+        <Badge
+          variant="destructive"
+          className="flex items-center gap-1 ui-badge"
+        >
           <ShieldCheck className="h-3 w-3" /> {status}
         </Badge>
       );
     case "Under Review":
       return (
-        <Badge variant="secondary" className="flex items-center gap-1">
+        <Badge variant="secondary" className="flex items-center gap-1 ui-badge">
           <Clock className="h-3 w-3" /> {status}
         </Badge>
       );
     case "Pending":
     default:
       return (
-        <Badge variant="outline" className="flex items-center gap-1">
+        <Badge variant="outline" className="flex items-center gap-1 ui-badge">
           <AlertCircle className="h-3 w-3" /> {status}
         </Badge>
       );
@@ -185,18 +217,27 @@ const getStatusBadge = (status: UserReport["status"]) => {
 const getRiskBadge = (score: number) => {
   if (score > 80)
     return (
-      <Badge variant="destructive" className="bg-red-500/20 text-red-500">
+      <Badge
+        variant="destructive"
+        className="bg-red-500/20 text-red-500 ui-badge"
+      >
         High
       </Badge>
     );
   if (score > 50)
     return (
-      <Badge variant="secondary" className="bg-yellow-500/20 text-yellow-500">
+      <Badge
+        variant="secondary"
+        className="bg-yellow-500/20 text-yellow-500 ui-badge"
+      >
         Medium
       </Badge>
     );
   return (
-    <Badge variant="outline" className="bg-green-500/20 text-green-500">
+    <Badge
+      variant="outline"
+      className="bg-green-500/20 text-green-500 ui-badge"
+    >
       Low
     </Badge>
   );
@@ -222,7 +263,7 @@ function ReportEditDialog({
   return (
     <Dialog>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[425px] ui-dialog">
         <DialogHeader>
           <DialogTitle>Edit Report</DialogTitle>
           <DialogDescription>
@@ -233,7 +274,7 @@ function ReportEditDialog({
           <div className="grid gap-2">
             <Label htmlFor="type">Type</Label>
             <Select value={type} onValueChange={setType}>
-              <SelectTrigger id="type">
+              <SelectTrigger id="type" className="ui-select">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -252,11 +293,12 @@ function ReportEditDialog({
               value={details}
               onChange={(e) => setDetails(e.target.value)}
               rows={4}
+              className="ui-textarea"
             />
           </div>
         </div>
         <DialogFooter>
-          <Button onClick={handleSave}>
+          <Button onClick={handleSave} className="ui-button">
             <Save className="mr-2 h-4 w-4" />
             Save Changes
           </Button>
@@ -292,7 +334,7 @@ function Sidebar({
           <Button
             key={item.id}
             variant={activeView === item.id ? "secondary" : "ghost"}
-            className="w-full justify-start"
+            className="w-full justify-start ui-button"
             onClick={() => setActiveView(item.id)}
           >
             <item.icon className="mr-3 h-5 w-5" />
@@ -302,14 +344,14 @@ function Sidebar({
       </nav>
       <div className="mt-auto space-y-2">
         <Link href="/">
-          <Button variant="outline" className="w-full justify-start">
+          <Button variant="outline" className="w-full justify-start ui-button">
             <Home className="mr-3 h-5 w-5" />
             Back to Main Site
           </Button>
         </Link>
         <Button
           variant="destructive"
-          className="w-full justify-start"
+          className="w-full justify-start ui-button"
           onClick={() => signOut()}
         >
           <LogOut className="mr-3 h-5 w-5" />
@@ -405,8 +447,9 @@ function DashboardPageContent() {
 
   return (
     <div
-      className={`flex min-h-screen bg-slate-100 dark:bg-gray-900 ${orbitron.className}`}
+      className={`flex min-h-screen bg-slate-100 dark:bg-gray-900 ${orbitron.variable}`}
     >
+      <GlobalStyle />
       <Sidebar activeView={activeView} setActiveView={setActiveView} />
       <main className="flex-1 p-6 lg:p-8 overflow-y-auto">
         {/* Header */}
@@ -457,7 +500,7 @@ function DashboardPageContent() {
 
         {/* Main Content Area */}
         {activeView === "vault" && (
-          <Card className="shadow-lg dark:bg-gray-800/50 mt-6">
+          <Card className="shadow-lg dark:bg-gray-800/50 mt-6 ui-card">
             <CardHeader className="flex-col sm:flex-row justify-between items-start sm:items-center">
               <div>
                 <CardTitle>My Reports</CardTitle>
@@ -470,13 +513,13 @@ function DashboardPageContent() {
                   <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input
                     placeholder="Search reports..."
-                    className="pl-8"
+                    className="pl-8 ui-input"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
                 </div>
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-[180px]">
+                  <SelectTrigger className="w-[180px] ui-select">
                     <SelectValue placeholder="Filter by status" />
                   </SelectTrigger>
                   <SelectContent>
@@ -487,7 +530,7 @@ function DashboardPageContent() {
                   </SelectContent>
                 </Select>
                 <Link href="/#report-scam">
-                  <Button>
+                  <Button className="ui-button">
                     <PlusCircle className="mr-2 h-4 w-4" />
                     Report New Scam
                   </Button>
@@ -495,7 +538,7 @@ function DashboardPageContent() {
               </div>
             </CardHeader>
             <CardContent>
-              <Table>
+              <Table className="ui-table">
                 <TableHeader>
                   <TableRow>
                     <TableHead>Type</TableHead>
@@ -527,22 +570,27 @@ function DashboardPageContent() {
                         <TableCell className="text-right">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" className="h-8 w-8 p-0">
+                              <Button
+                                variant="ghost"
+                                className="h-8 w-8 p-0 ui-button"
+                              >
                                 <MoreHorizontal className="h-4 w-4" />
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <ReportEditDialog
-                                report={report}
-                                onSave={handleSave}
+                              <DropdownMenuItem
+                                onSelect={(e) => e.preventDefault()}
                               >
-                                <DropdownMenuItem
-                                  onSelect={(e) => e.preventDefault()}
+                                <ReportEditDialog
+                                  report={report}
+                                  onSave={handleSave}
                                 >
-                                  <Edit className="mr-2 h-4 w-4" />
-                                  Edit
-                                </DropdownMenuItem>
-                              </ReportEditDialog>
+                                  <div className="flex items-center">
+                                    <Edit className="mr-2 h-4 w-4" />
+                                    Edit
+                                  </div>
+                                </ReportEditDialog>
+                              </DropdownMenuItem>
                               <DropdownMenuItem
                                 onClick={() => handleDownload(report)}
                               >
@@ -576,7 +624,7 @@ function DashboardPageContent() {
 
         {activeView === "analytics" && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-            <Card>
+            <Card className="ui-card">
               <CardHeader>
                 <CardTitle>Your Reporting Habits</CardTitle>
                 <CardDescription>
@@ -610,7 +658,7 @@ function DashboardPageContent() {
                 </div>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="ui-card">
               <CardHeader>
                 <CardTitle>AI-Powered Insights</CardTitle>
                 <CardDescription>
@@ -644,7 +692,7 @@ function DashboardPageContent() {
         )}
 
         {activeView === "settings" && (
-          <Card className="shadow-lg dark:bg-gray-800/50 mt-6">
+          <Card className="shadow-lg dark:bg-gray-800/50 mt-6 ui-card">
             <CardHeader>
               <CardTitle>Account Settings</CardTitle>
               <CardDescription>
@@ -657,7 +705,11 @@ function DashboardPageContent() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <Label htmlFor="name">Name</Label>
-                    <Input id="name" defaultValue={session?.user?.name || ""} />
+                    <Input
+                      id="name"
+                      defaultValue={session?.user?.name || ""}
+                      className="ui-input"
+                    />
                   </div>
                   <div className="space-y-1">
                     <Label htmlFor="email">Email</Label>
@@ -666,10 +718,13 @@ function DashboardPageContent() {
                       type="email"
                       defaultValue={session?.user?.email || ""}
                       disabled
+                      className="ui-input"
                     />
                   </div>
                 </div>
-                <Button size="sm">Update Profile</Button>
+                <Button size="sm" className="ui-button">
+                  Update Profile
+                </Button>
               </div>
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Notifications</h3>
@@ -682,7 +737,7 @@ function DashboardPageContent() {
                       Get instant updates on your submissions.
                     </p>
                   </div>
-                  <Switch id="email-notifications" />
+                  <Switch id="email-notifications" className="ui-switch" />
                 </div>
               </div>
               <div className="space-y-4">
@@ -698,8 +753,27 @@ function DashboardPageContent() {
                     variant="outline"
                     size="sm"
                     onClick={() => {
-                      /* handleExportAll logic */
+                      const doc = new jsPDF();
+                      doc.text("All User Reports", 14, 22);
+                      autoTable(doc, {
+                        startY: 30,
+                        head: [
+                          ["ID", "Type", "Date", "Status", "Risk", "Details"],
+                        ],
+                        body: allUserReports.map((report) => [
+                          report.id,
+                          report.type,
+                          report.date,
+                          report.status,
+                          `${report.riskScore}/100`,
+                          report.details,
+                        ]),
+                      });
+                      doc.save(
+                        `all-reports-${session?.user?.id || "user"}.pdf`
+                      );
                     }}
+                    className="ui-button"
                   >
                     <FileDown className="mr-2 h-4 w-4" />
                     Export All
