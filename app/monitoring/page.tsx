@@ -98,7 +98,36 @@ import { motion } from "framer-motion";
 const orbitron = Orbitron({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700", "800", "900"],
+  variable: "--font-orbitron", // Define a CSS variable for global use
 });
+
+// --- GLOBAL CSS FOR ORBITRON ---
+const GlobalStyle = () => (
+  <style jsx global>{`
+    :root {
+      --font-orbitron: ${orbitron.style.fontFamily};
+    }
+    html,
+    body,
+    * {
+      font-family: var(--font-orbitron), sans-serif !important;
+    }
+    /* Ensure UI components use Orbitron */
+    .ui-card,
+    .ui-button,
+    .ui-table,
+    .ui-input,
+    .ui-select,
+    .ui-badge,
+    .ui-tabs,
+    .ui-switch,
+    .ui-textarea,
+    .ui-skeleton,
+    .ui-dialog {
+      font-family: var(--font-orbitron), sans-serif !important;
+    }
+  `}</style>
+);
 
 // --- TYPES & MOCK DATA ---
 interface DetectedThreat {
@@ -286,7 +315,7 @@ function MonitoringPageContent() {
       <div
         className={`flex min-h-screen items-center justify-center bg-slate-100 dark:bg-gray-900 p-4 ${orbitron.className}`}
       >
-        <Card className="text-center">
+        <Card className="text-center ui-card">
           <CardHeader>
             <CardTitle>Access Denied</CardTitle>
             <CardDescription>
@@ -295,7 +324,7 @@ function MonitoringPageContent() {
           </CardHeader>
           <CardContent>
             <Link href="/auth/login">
-              <Button>Sign In</Button>
+              <Button className="ui-button">Sign In</Button>
             </Link>
           </CardContent>
         </Card>
@@ -307,6 +336,7 @@ function MonitoringPageContent() {
     <div
       className={`min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-900 dark:to-blue-950 py-12 ${orbitron.className}`}
     >
+      <GlobalStyle /> {/* Inject global Orbitron font styles */}
       <div className="container mx-auto px-4">
         <AnimatedSection>
           <div className="text-center mb-12">
@@ -324,7 +354,7 @@ function MonitoringPageContent() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
           {/* Left Column: Domain Management */}
           <AnimatedSection>
-            <Card className="lg:col-span-1 shadow-xl dark:bg-gray-800/70">
+            <Card className="lg:col-span-1 shadow-xl dark:bg-gray-800/70 ui-card">
               <CardHeader>
                 <CardTitle>Monitored Domains</CardTitle>
                 <CardDescription>
@@ -337,8 +367,9 @@ function MonitoringPageContent() {
                     placeholder="e.g., yourbrand.com"
                     value={newDomain}
                     onChange={(e) => setNewDomain(e.target.value)}
+                    className="ui-input"
                   />
-                  <Button onClick={handleAddDomain}>
+                  <Button onClick={handleAddDomain} className="ui-button">
                     <PlusCircle className="h-4 w-4" />
                   </Button>
                 </div>
@@ -356,7 +387,7 @@ function MonitoringPageContent() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-6 w-6"
+                          className="h-6 w-6 ui-button"
                           onClick={() => handleRemoveDomain(domain)}
                         >
                           <X className="h-4 w-4" />
@@ -376,7 +407,7 @@ function MonitoringPageContent() {
           {/* Right Column: Threats Dashboard */}
           <div className="lg:col-span-2">
             <AnimatedSection>
-              <Card className="shadow-xl dark:bg-gray-800/70">
+              <Card className="shadow-xl dark:bg-gray-800/70 ui-card">
                 <CardHeader>
                   <CardTitle>Detected Threats Dashboard</CardTitle>
                   <CardDescription>
@@ -384,7 +415,7 @@ function MonitoringPageContent() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Table>
+                  <Table className="ui-table">
                     <TableHeader>
                       <TableRow>
                         <TableHead>Suspicious Domain</TableHead>
@@ -398,16 +429,16 @@ function MonitoringPageContent() {
                         Array.from({ length: 3 }).map((_, i) => (
                           <TableRow key={i}>
                             <TableCell>
-                              <Skeleton className="h-4 w-40" />
+                              <Skeleton className="h-4 w-40 ui-skeleton" />
                             </TableCell>
                             <TableCell>
-                              <Skeleton className="h-4 w-32" />
+                              <Skeleton className="h-4 w-32 ui-skeleton" />
                             </TableCell>
                             <TableCell>
-                              <Skeleton className="h-6 w-16" />
+                              <Skeleton className="h-6 w-16 ui-skeleton" />
                             </TableCell>
                             <TableCell className="text-right">
-                              <Skeleton className="h-8 w-20 ml-auto" />
+                              <Skeleton className="h-8 w-20 ml-auto ui-skeleton" />
                             </TableCell>
                           </TableRow>
                         ))
@@ -421,13 +452,16 @@ function MonitoringPageContent() {
                               {threat.originalDomain}
                             </TableCell>
                             <TableCell>
-                              <Badge variant="destructive">{threat.risk}</Badge>
+                              <Badge variant="destructive" className="ui-badge">
+                                {threat.risk}
+                              </Badge>
                             </TableCell>
                             <TableCell className="text-right">
                               <Button
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => handleDismissThreat(threat.id)}
+                                className="ui-button"
                               >
                                 <X className="mr-2 h-4 w-4" />
                                 Dismiss

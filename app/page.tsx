@@ -229,10 +229,6 @@ const enTranslations = {
   // New for gamification
   guardianPoints: "Guardian Points",
   earnedPoints: "You've earned {points} Guardian Points!",
-  // New for Blog
-  blogTitle: "Scam of the Week & Resource Center",
-  blogSubtitle: "Deep dives into recent threats and how to stay safe.",
-  readMore: "Read More",
   // New for B2B Monitoring
   domainMonitoringTitle: "Proactive Brand & Domain Monitoring",
   domainMonitoringSubtitle: "Protect your brand from impersonation.",
@@ -356,7 +352,8 @@ const translations: Record<"en" | "am", typeof enTranslations> = {
     yourMessage: "የእርስዎ መልእክት",
     sendMessage: "መልእክት ላክ",
     sending: "እየላከ ነው...",
-    footerSlogan: "በመስመር ላይ ደህንነትዎን ለመጠበቅ የላቀ AI-የተጎላበተ የማጭበርበር መለየት።",
+    footerSlogan:
+      "Advanced AI-powered phishing detection to keep you safe online.",
     quickLinks: "ፈጣን አገናኞች",
     legal: "ህጋዊ",
     privacyPolicy: "የ ግል የሆነ",
@@ -370,16 +367,12 @@ const translations: Record<"en" | "am", typeof enTranslations> = {
     // New for gamification
     guardianPoints: "የጠባቂ ነጥቦች",
     earnedPoints: "{points} የጠባቂ ነጥቦችን አግኝተዋል!",
-    // New for Blog
-    blogTitle: "የሳምንቱ ማጭበርበር እና የመረጃ ማዕከል",
-    blogSubtitle: "የቅርብ ጊዜ ስጋቶች እና እንዴት ደህንነትዎን መጠበቅ እንደሚችሉ ጥልቅ ትንተና።",
-    readMore: "ተጨማሪ ያንብቡ",
     // New for B2B Monitoring
-    domainMonitoringTitle: "ንቁ የጎራ ክትትል",
-    domainMonitoringSubtitle: "ብራንድዎን ከማስመሰል ይጠብቁ።",
+    domainMonitoringTitle: "Proactive Brand & Domain Monitoring",
+    domainMonitoringSubtitle: "Protect your brand from impersonation.",
     domainMonitoringDesc:
-      "ኦፊሴላዊ ጎራዎችዎን ያስመዝግቡ እና እኛም ድሩን ለተመሳሳይ ጎራዎች (typosquatting) እንፈትሻለን፣ ሊሆኑ የሚችሉ ስጋቶችን እናሳውቅዎታለን።",
-    learnAboutMonitoring: "ስለ ክትትል ይወቁ",
+      "Register your official domains and we'll scour the web for lookalike domains (typosquatting), alerting you to potential threats.",
+    learnAboutMonitoring: "Learn About Monitoring",
   },
 };
 
@@ -948,7 +941,7 @@ function RecentScamsSection() {
                 <SelectValue placeholder="Filter by type..." />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
+                <SelectItem value="all">All Statuses</SelectItem>
                 {scamTypes.map((type) => (
                   <SelectItem key={type} value={type}>
                     {type}
@@ -1442,128 +1435,6 @@ const BlogPostSkeleton = () => (
   </div>
 );
 
-function ResourceCenterSection() {
-  const { t } = useAppContext();
-  const { approvedScams } = useScam();
-  const [posts, setPosts] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  // Function to get the current week number of the year
-  const getWeekNumber = (d: Date): number => {
-    d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-    d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
-    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-    const weekNo = Math.ceil(((+d - +yearStart) / 86400000 + 1) / 7);
-    return weekNo;
-  };
-
-  useEffect(() => {
-    setIsLoading(true);
-    setTimeout(() => {
-      // 1. Determine Scam of the Week from local, recent reports
-      const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-      const recentUserScams = approvedScams.filter(
-        (scam) => scam.timestamp > oneWeekAgo
-      );
-
-      let scamOfTheWeek: any;
-
-      if (recentUserScams.length > 0) {
-        // Find the most reported scam type in the last week
-        const typeCounts = recentUserScams.reduce((acc, report) => {
-          acc[report.scamType] = (acc[report.scamType] || 0) + 1;
-          return acc;
-        }, {} as Record<string, number>);
-
-        const topScamType = Object.entries(typeCounts).sort(
-          (a, b) => b[1] - a[1]
-        )[0][0];
-
-        // Find a blog post that matches this type
-        scamOfTheWeek =
-          allBlogPosts.find((post) => post.type === topScamType) ||
-          allBlogPosts[0]; // Fallback
-        scamOfTheWeek.title = `Community Alert: ${scamOfTheWeek.title}`;
-      } else {
-        // 2. Fallback to weekly rotation if no recent user reports
-        const currentWeek = getWeekNumber(new Date());
-        const weeklyIndex = currentWeek % allBlogPosts.length;
-        scamOfTheWeek = allBlogPosts[weeklyIndex];
-        scamOfTheWeek.title = `Scam of the Week: ${scamOfTheWeek.title}`;
-      }
-
-      // 3. Get other random posts for the resource center
-      const otherPosts = allBlogPosts
-        .filter((post) => post.id !== scamOfTheWeek.id)
-        .sort(() => 0.5 - Math.random()) // Shuffle
-        .slice(0, 2); // Take the first two
-
-      setPosts([scamOfTheWeek, ...otherPosts]);
-      setIsLoading(false);
-    }, 1500); // Simulate network delay
-  }, [approvedScams]); // Re-run when approved scams change
-
-  return (
-    <section className="py-24 bg-white dark:bg-gray-900">
-      <div className="container mx-auto px-4">
-        <AnimatedSection>
-          <div className="text-center mb-12">
-            <h2 className="text-4xl md:text-5xl font-bold mb-4 tracking-tight text-blue-500 dark:text-blue-400">
-              {t("blogTitle")}
-            </h2>
-            <p className="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
-              {t("blogSubtitle")}
-            </p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {isLoading
-              ? Array.from({ length: 3 }).map((_, index) => (
-                  <BlogPostSkeleton key={index} />
-                ))
-              : posts.map((post) => (
-                  <Link href={post.link} key={post.id} passHref>
-                    <motion.div
-                      whileHover={{ y: -5, scale: 1.03 }}
-                      transition={{ duration: 0.3 }}
-                    >
-                      <Card className="h-full flex flex-col overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 dark:bg-gray-800/50 cursor-pointer">
-                        {post.image && (
-                          <div className="relative w-full h-48">
-                            <Image
-                              src={post.image}
-                              alt={post.title}
-                              layout="fill"
-                              objectFit="cover"
-                            />
-                          </div>
-                        )}
-                        <CardHeader>
-                          <CardTitle className="text-xl">
-                            {post.title}
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent className="flex-grow">
-                          <p className="text-gray-600 dark:text-gray-300 line-clamp-3">
-                            {post.excerpt}
-                          </p>
-                        </CardContent>
-                        <div className="p-6 pt-0">
-                          <Button variant="link" className="p-0">
-                            {t("readMore")}{" "}
-                            <ChevronRight className="ml-1 h-4 w-4" />
-                          </Button>
-                        </div>
-                      </Card>
-                    </motion.div>
-                  </Link>
-                ))}
-          </div>
-        </AnimatedSection>
-      </div>
-    </section>
-  );
-}
-
 function DomainMonitoringSection() {
   const { t } = useAppContext();
   return (
@@ -1877,7 +1748,12 @@ function ContactSection() {
                         id="message"
                         rows={5}
                         value={formState.message}
-                        onChange={handleInputChange}
+                        onChange={(e) =>
+                          setFormState((prev) => ({
+                            ...prev,
+                            message: e.target.value,
+                          }))
+                        }
                         placeholder=" "
                         className="peer bg-transparent border-gray-300 dark:border-gray-600 focus:ring-blue-500 focus:border-blue-500 rounded-xl p-4 w-full resize-none"
                         required
@@ -1897,7 +1773,7 @@ function ContactSection() {
                       className="w-auto px-8 py-3 bg-blue-500 hover:bg-blue-600 text-white font-semibold text-base transition-all duration-300 hover:scale-105 flex items-center justify-center gap-2 rounded-lg shadow-md hover:shadow-lg disabled:bg-blue-400 disabled:cursor-not-allowed"
                     >
                       {isSubmitting ? (
-                        <Loader2 className="h-5 w-5 animate-spin" />
+                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                       ) : (
                         <Send className="h-4 w-4" />
                       )}
@@ -1963,14 +1839,6 @@ function Footer() {
                 </Link>
               </li>
               {/* New Quick Links */}
-              <li>
-                <Link
-                  href="/blog"
-                  className="hover:text-white transition-colors"
-                >
-                  {t("blogTitle")}
-                </Link>
-              </li>
               <li>
                 <Link
                   href="/monitoring"
@@ -2103,7 +1971,6 @@ function HomePageContent() {
         <AboutSection />
         <TestimonialsSection />
         <ReportScamSection />
-        <ResourceCenterSection />
         <DomainMonitoringSection />
         <TeamSection />
         <ContactSection />
