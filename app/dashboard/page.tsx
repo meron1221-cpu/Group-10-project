@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, ReactNode } from "react";
+import { useState, useMemo, useEffect, useCallback, ReactNode } from "react";
 import { Orbitron } from "next/font/google";
 import { useSession, signOut, SessionProvider } from "next-auth/react";
 import Link from "next/link";
