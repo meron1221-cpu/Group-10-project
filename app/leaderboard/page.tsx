@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useMemo, useEffect, ReactNode } from "react";
 import { Orbitron } from "next/font/google";
 import { useSession, SessionProvider } from "next-auth/react";
 import Link from "next/link";
 import {
   Trophy,
   Award,
+  User,
   ArrowLeft,
   Shield,
   RefreshCw,
@@ -77,7 +78,7 @@ function LeaderboardPageContent() {
 
   useEffect(() => {
     fetchLeaderboard();
-    const interval = setInterval(fetchLeaderboard, 30000); // Poll every 30 seconds
+    const interval = setInterval(fetchLeaderboard, 30000); // Poll every 30 seconds for real-time updates
     return () => clearInterval(interval);
   }, []);
 
@@ -208,6 +209,7 @@ function LeaderboardPageContent() {
   );
 }
 
+// The final default export wraps the page content with the SessionProvider
 export default function LeaderboardPage() {
   return (
     <SessionProvider>
