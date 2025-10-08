@@ -11,6 +11,7 @@ interface User {
   email: string;
   hashedPassword?: string;
   points?: number;
+  reports?: number; // Added to track report count
   resetToken?: string | null;
   resetTokenExpiry?: Date | null;
 }
@@ -50,6 +51,11 @@ export const db = {
       return database.users.find((user) => user.email === email) || null;
     },
 
+    findById: async (id: string): Promise<User | null> => {
+      const database = readDB();
+      return database.users.find((user) => user.id === id) || null;
+    },
+
     findFirst: async ({
       where: { resetToken },
     }: {
@@ -76,6 +82,7 @@ export const db = {
         ...data,
         id: `user-${Date.now()}`,
         points: 0,
+        reports: 0, // Initialize reports count
       };
       database.users.push(user);
       writeDB(database);

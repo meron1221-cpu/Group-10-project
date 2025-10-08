@@ -6,6 +6,13 @@
       "hashedPassword": "$2b$10$0e0Bvgp4y60TVmKT6CQPj.97qge8MpGdcbPSq/wgparp1TfIKHtqy",
       "id": "user-1759957865934",
       "points": 0
+    },
+    {
+      "username": "leul",
+      "email": "luelkostre@gmail.com",
+      "hashedPassword": "$2b$10$H445SONbAbSVUP/xGeSGwe32RiHFCtpTAjx9bVC/v2zLS5vfAwb6q",
+      "id": "user-1759960842834",
+      "points": 0
     }
   ]
 }
