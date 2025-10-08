@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useMemo, ReactNode } from "react";
+import { useState, useMemo, useEffect, ReactNode } from "react";
 import { Orbitron } from "next/font/google";
 import { useSession, signOut, SessionProvider } from "next-auth/react";
+import { DefaultSession } from "next-auth";
 import Link from "next/link";
 import {
   ShieldCheck,
@@ -120,8 +121,17 @@ const GlobalStyle = () => (
     }
   `}</style>
 );
-
-// --- TYPES & MOCK DATA ---
+// --- TYPES ---
+// Extend the default session type to include guardianScore and leaderboardRank
+declare module "next-auth" {
+  interface Session {
+    user: {
+      guardianScore?: number;
+      leaderboardRank?: number;
+    } & DefaultSession["user"];
+  }
+}
+// --- TYPES ---
 interface UserReport {
   id: string;
   userId: string;
@@ -132,59 +142,6 @@ interface UserReport {
   riskScore: number; // 0-100
   severity: "Low" | "Medium" | "High";
 }
-
-const allReports: UserReport[] = [
-  {
-    id: "rep-001",
-    userId: "user-123",
-    type: "Phishing",
-    date: "2024-05-21",
-    status: "Verified Scam",
-    details: "Email from 'Netflx' asking to update payment.",
-    riskScore: 95,
-    severity: "High",
-  },
-  {
-    id: "rep-002",
-    userId: "user-123",
-    type: "Fake Job Offer",
-    date: "2024-05-19",
-    status: "Under Review",
-    details: "WhatsApp message for a high-paying remote job.",
-    riskScore: 70,
-    severity: "Medium",
-  },
-  {
-    id: "rep-003",
-    userId: "user-123",
-    type: "Bank Impersonation",
-    date: "2024-05-15",
-    status: "Pending",
-    details: "SMS claiming my bank account was locked.",
-    riskScore: 85,
-    severity: "High",
-  },
-  {
-    id: "rep-004",
-    userId: "user-456", // Different user
-    type: "Lottery Scam",
-    date: "2024-05-20",
-    status: "Verified Scam",
-    details: "You've won a prize! Click here to claim.",
-    riskScore: 90,
-    severity: "High",
-  },
-  {
-    id: "rep-005",
-    userId: "user-123",
-    type: "Phishing",
-    date: "2024-05-12",
-    status: "Verified Scam",
-    details: "Your Amazon account has been suspended.",
-    riskScore: 92,
-    severity: "High",
-  },
-];
 
 // --- HELPER COMPONENTS & FUNCTIONS ---
 
@@ -273,7 +230,6 @@ const getRiskBadge = (score: number) => {
 function ReportEditDialog({
   report,
   onSave,
-  children,
 }: {
   report: UserReport;
   onSave: (updatedReport: UserReport) => void;
@@ -282,9 +238,23 @@ function ReportEditDialog({
   const [details, setDetails] = useState(report.details);
   const [type, setType] = useState(report.type);
 
-  const handleSave = () => {
-    onSave({ ...report, details, type });
-    toast.success("Report updated successfully!");
+  const handleSave = async () => {
+    const updatedReport = { ...report, details, type };
+    try {
+      const response = await fetch(`/api/reports/${report.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updatedReport),
+      });
+      if (response.ok) {
+        onSave(updatedReport);
+        toast.success("Report updated successfully!");
+      } else {
+        toast.error("Failed to update report.");
+      }
+    } catch (error) {
+      toast.error("Error updating report.");
+    }
   };
 
   return (
@@ -300,8 +270,8 @@ function ReportEditDialog({
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
             <Label htmlFor="type">Type</Label>
-            <Select value={type} onValueChange={setType}>
-              <SelectTrigger id="type" className="ui-select">
+            <Select value={type} onValueChange={setType} className="ui-select">
+              <SelectTrigger id="type">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -396,14 +366,40 @@ function DashboardPageContent() {
 
   // Use session user data or fallback to "User" if name is unavailable
   const userName = session?.user?.name || "User";
-  const userId = session?.user?.id || "user-123"; // Fallback ID for filtering reports
+  const userId = session?.user?.id;
 
-  const [allUserReports, setAllUserReports] = useState<UserReport[]>(
-    allReports.filter((r) => r.userId === userId)
-  );
+  const [allUserReports, setAllUserReports] = useState<UserReport[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [activeView, setActiveView] = useState("vault");
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+
+  const fetchReports = async () => {
+    if (!userId) return;
+
+    setIsLoading(true);
+    try {
+      const response = await fetch("/api/user-reports");
+      if (response.ok) {
+        const data = await response.json();
+        setAllUserReports(data.reports || []);
+      } else {
+        toast.error("Failed to fetch reports.");
+      }
+    } catch (error) {
+      toast.error("Error fetching reports.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (status === "authenticated" && userId) {
+      fetchReports();
+      const interval = setInterval(fetchReports, 30000); // Poll every 30 seconds for real-time updates
+      return () => clearInterval(interval);
+    }
+  }, [status, userId]);
 
   const filteredReports = useMemo(() => {
     return allUserReports.filter(
@@ -433,11 +429,22 @@ function DashboardPageContent() {
     return Object.entries(counts).map(([name, value]) => ({ name, value }));
   }, [allUserReports]);
 
-  const handleDelete = (reportId: string) => {
-    setAllUserReports(
-      allUserReports.filter((report) => report.id !== reportId)
-    );
-    toast.error("Report deleted from your vault.");
+  const handleDelete = async (reportId: string) => {
+    try {
+      const response = await fetch(`/api/reports/${reportId}`, {
+        method: "DELETE",
+      });
+      if (response.ok) {
+        setAllUserReports(
+          allUserReports.filter((report) => report.id !== reportId)
+        );
+        toast.success("Report deleted from your vault.");
+      } else {
+        toast.error("Failed to delete report.");
+      }
+    } catch (error) {
+      toast.error("Error deleting report.");
+    }
   };
 
   const handleSave = (updatedReport: UserReport) => {
@@ -608,87 +615,116 @@ function DashboardPageContent() {
                     Report New Scam
                   </Button>
                 </Link>
+                <Button
+                  variant="outline"
+                  onClick={fetchReports}
+                  className="ui-button"
+                >
+                  Refresh
+                </Button>
               </div>
             </CardHeader>
             <CardContent>
-              <Table className="ui-table">
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Details</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>AI Risk Score</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredReports.length > 0 ? (
-                    filteredReports.map((report) => (
-                      <TableRow key={report.id}>
-                        <TableCell className="font-medium">
-                          {report.type}
-                        </TableCell>
-                        <TableCell className="max-w-sm truncate">
-                          {report.details}
-                        </TableCell>
-                        <TableCell>{report.date}</TableCell>
-                        <TableCell>{getStatusBadge(report.status)}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <span>{report.riskScore}/100</span>
-                            {getRiskBadge(report.riskScore)}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                className="h-8 w-8 p-0 ui-button"
-                              >
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <ReportEditDialog
-                                report={report}
-                                onSave={handleSave}
-                              >
-                                <DropdownMenuItem
-                                  onSelect={(e) => e.preventDefault()}
+              {isLoading ? (
+                <div className="flex justify-center items-center h-24">
+                  <svg
+                    className="animate-spin h-8 w-8 text-blue-600"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                      fill="none"
+                    />
+                    <path
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                    />
+                  </svg>
+                </div>
+              ) : (
+                <Table className="ui-table">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Details</TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>AI Risk Score</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredReports.length > 0 ? (
+                      filteredReports.map((report) => (
+                        <TableRow key={report.id}>
+                          <TableCell className="font-medium">
+                            {report.type}
+                          </TableCell>
+                          <TableCell className="max-w-sm truncate">
+                            {report.details}
+                          </TableCell>
+                          <TableCell>{report.date}</TableCell>
+                          <TableCell>{getStatusBadge(report.status)}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <span>{report.riskScore}/100</span>
+                              {getRiskBadge(report.riskScore)}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  className="h-8 w-8 p-0 ui-button"
                                 >
-                                  <Edit className="mr-2 h-4 w-4" />
-                                  Edit
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <ReportEditDialog
+                                  report={report}
+                                  onSave={handleSave}
+                                >
+                                  <DropdownMenuItem
+                                    onSelect={(e) => e.preventDefault()}
+                                  >
+                                    <Edit className="mr-2 h-4 w-4" />
+                                    Edit
+                                  </DropdownMenuItem>
+                                </ReportEditDialog>
+                                <DropdownMenuItem
+                                  onClick={() => handleDownload(report)}
+                                >
+                                  <Download className="mr-2 h-4 w-4" />
+                                  Download
                                 </DropdownMenuItem>
-                              </ReportEditDialog>
-                              <DropdownMenuItem
-                                onClick={() => handleDownload(report)}
-                              >
-                                <Download className="mr-2 h-4 w-4" />
-                                Download
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                className="text-red-500"
-                                onClick={() => handleDelete(report.id)}
-                              >
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                                <DropdownMenuItem
+                                  className="text-red-500"
+                                  onClick={() => handleDelete(report.id)}
+                                >
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={6} className="h-24 text-center">
+                          No reports found. Report a scam to get started.
                         </TableCell>
                       </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={6} className="h-24 text-center">
-                        No reports found.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
+                    )}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
         )}
