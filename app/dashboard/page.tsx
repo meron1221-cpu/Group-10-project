@@ -3,7 +3,6 @@
 import { useState, useMemo, useEffect, ReactNode } from "react";
 import { Orbitron } from "next/font/google";
 import { useSession, signOut, SessionProvider } from "next-auth/react";
-import { DefaultSession } from "next-auth";
 import Link from "next/link";
 import {
   ShieldCheck,
@@ -30,6 +29,7 @@ import {
   Trophy,
   LogOut,
   Home,
+  Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
@@ -87,51 +87,15 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // --- FONT SETUP ---
 const orbitron = Orbitron({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700", "800", "900"],
-  variable: "--font-orbitron",
 });
 
-// --- GLOBAL CSS FOR ORBITRON ---
-const GlobalStyle = () => (
-  <style jsx global>{`
-    :root {
-      --font-orbitron: ${orbitron.style.fontFamily};
-    }
-    html,
-    body,
-    * {
-      font-family: var(--font-orbitron), sans-serif !important;
-    }
-    /* Ensure UI components use Orbitron */
-    .ui-card,
-    .ui-button,
-    .ui-table,
-    .ui-input,
-    .ui-select,
-    .ui-badge,
-    .ui-tabs,
-    .ui-switch,
-    .ui-textarea,
-    .ui-dialog {
-      font-family: var(--font-orbitron), sans-serif !important;
-    }
-  `}</style>
-);
-// --- TYPES ---
-// Extend the default session type to include guardianScore and leaderboardRank
-declare module "next-auth" {
-  interface Session {
-    user: {
-      guardianScore?: number;
-      leaderboardRank?: number;
-    } & DefaultSession["user"];
-  }
-}
-// --- TYPES ---
+// --- TYPES & MOCK DATA ---
 interface UserReport {
   id: string;
   userId: string;
@@ -142,6 +106,29 @@ interface UserReport {
   riskScore: number; // 0-100
   severity: "Low" | "Medium" | "High";
 }
+
+const allReports: UserReport[] = [
+  {
+    id: "rep-001",
+    userId: "user-123",
+    type: "Phishing",
+    date: "2024-05-21",
+    status: "Verified Scam",
+    details: "Email from 'Netflx' asking to update payment.",
+    riskScore: 95,
+    severity: "High",
+  },
+  {
+    id: "rep-002",
+    userId: "user-123",
+    type: "Fake Job Offer",
+    date: "2024-05-19",
+    status: "Under Review",
+    details: "WhatsApp message for a high-paying remote job.",
+    riskScore: 70,
+    severity: "Medium",
+  },
+];
 
 // --- HELPER COMPONENTS & FUNCTIONS ---
 
@@ -157,7 +144,7 @@ function KpiCard({
   color: string;
 }) {
   return (
-    <Card className="shadow-md dark:bg-gray-800/50 transition-transform hover:scale-105 ui-card">
+    <Card className="shadow-md dark:bg-gray-800/50 transition-transform hover:scale-105">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium text-gray-500 dark:text-gray-400">
           {title}
@@ -175,23 +162,20 @@ const getStatusBadge = (status: UserReport["status"]) => {
   switch (status) {
     case "Verified Scam":
       return (
-        <Badge
-          variant="destructive"
-          className="flex items-center gap-1 ui-badge"
-        >
+        <Badge variant="destructive" className="flex items-center gap-1">
           <ShieldCheck className="h-3 w-3" /> {status}
         </Badge>
       );
     case "Under Review":
       return (
-        <Badge variant="secondary" className="flex items-center gap-1 ui-badge">
+        <Badge variant="secondary" className="flex items-center gap-1">
           <Clock className="h-3 w-3" /> {status}
         </Badge>
       );
     case "Pending":
     default:
       return (
-        <Badge variant="outline" className="flex items-center gap-1 ui-badge">
+        <Badge variant="outline" className="flex items-center gap-1">
           <AlertCircle className="h-3 w-3" /> {status}
         </Badge>
       );
@@ -201,27 +185,18 @@ const getStatusBadge = (status: UserReport["status"]) => {
 const getRiskBadge = (score: number) => {
   if (score > 80)
     return (
-      <Badge
-        variant="destructive"
-        className="bg-red-500/20 text-red-500 ui-badge"
-      >
+      <Badge variant="destructive" className="bg-red-500/20 text-red-500">
         High
       </Badge>
     );
   if (score > 50)
     return (
-      <Badge
-        variant="secondary"
-        className="bg-yellow-500/20 text-yellow-500 ui-badge"
-      >
+      <Badge variant="secondary" className="bg-yellow-500/20 text-yellow-500">
         Medium
       </Badge>
     );
   return (
-    <Badge
-      variant="outline"
-      className="bg-green-500/20 text-green-500 ui-badge"
-    >
+    <Badge variant="outline" className="bg-green-500/20 text-green-500">
       Low
     </Badge>
   );
@@ -230,6 +205,7 @@ const getRiskBadge = (score: number) => {
 function ReportEditDialog({
   report,
   onSave,
+  children,
 }: {
   report: UserReport;
   onSave: (updatedReport: UserReport) => void;
@@ -238,29 +214,15 @@ function ReportEditDialog({
   const [details, setDetails] = useState(report.details);
   const [type, setType] = useState(report.type);
 
-  const handleSave = async () => {
-    const updatedReport = { ...report, details, type };
-    try {
-      const response = await fetch(`/api/reports/${report.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updatedReport),
-      });
-      if (response.ok) {
-        onSave(updatedReport);
-        toast.success("Report updated successfully!");
-      } else {
-        toast.error("Failed to update report.");
-      }
-    } catch (error) {
-      toast.error("Error updating report.");
-    }
+  const handleSave = () => {
+    onSave({ ...report, details, type });
+    toast.success("Report updated successfully!");
   };
 
   return (
     <Dialog>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="sm:max-w-[425px] ui-dialog">
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Edit Report</DialogTitle>
           <DialogDescription>
@@ -270,7 +232,7 @@ function ReportEditDialog({
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
             <Label htmlFor="type">Type</Label>
-            <Select value={type} onValueChange={setType} className="ui-select">
+            <Select value={type} onValueChange={setType}>
               <SelectTrigger id="type">
                 <SelectValue />
               </SelectTrigger>
@@ -290,12 +252,11 @@ function ReportEditDialog({
               value={details}
               onChange={(e) => setDetails(e.target.value)}
               rows={4}
-              className="ui-textarea"
             />
           </div>
         </div>
         <DialogFooter>
-          <Button onClick={handleSave} className="ui-button">
+          <Button onClick={handleSave}>
             <Save className="mr-2 h-4 w-4" />
             Save Changes
           </Button>
@@ -305,7 +266,6 @@ function ReportEditDialog({
   );
 }
 
-// --- SIDEBAR COMPONENT ---
 function Sidebar({
   activeView,
   setActiveView,
@@ -332,7 +292,7 @@ function Sidebar({
           <Button
             key={item.id}
             variant={activeView === item.id ? "secondary" : "ghost"}
-            className="w-full justify-start ui-button"
+            className="w-full justify-start"
             onClick={() => setActiveView(item.id)}
           >
             <item.icon className="mr-3 h-5 w-5" />
@@ -342,14 +302,14 @@ function Sidebar({
       </nav>
       <div className="mt-auto space-y-2">
         <Link href="/">
-          <Button variant="outline" className="w-full justify-start ui-button">
+          <Button variant="outline" className="w-full justify-start">
             <Home className="mr-3 h-5 w-5" />
             Back to Main Site
           </Button>
         </Link>
         <Button
           variant="destructive"
-          className="w-full justify-start ui-button"
+          className="w-full justify-start"
           onClick={() => signOut()}
         >
           <LogOut className="mr-3 h-5 w-5" />
@@ -363,43 +323,17 @@ function Sidebar({
 // --- MAIN DASHBOARD CONTENT COMPONENT ---
 function DashboardPageContent() {
   const { data: session, status } = useSession();
-
-  // Use session user data or fallback to "User" if name is unavailable
-  const userName = session?.user?.name || "User";
-  const userId = session?.user?.id;
-
   const [allUserReports, setAllUserReports] = useState<UserReport[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [activeView, setActiveView] = useState("vault");
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const fetchReports = async () => {
-    if (!userId) return;
-
-    setIsLoading(true);
-    try {
-      const response = await fetch("/api/user-reports");
-      if (response.ok) {
-        const data = await response.json();
-        setAllUserReports(data.reports || []);
-      } else {
-        toast.error("Failed to fetch reports.");
-      }
-    } catch (error) {
-      toast.error("Error fetching reports.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   useEffect(() => {
-    if (status === "authenticated" && userId) {
-      fetchReports();
-      const interval = setInterval(fetchReports, 30000); // Poll every 30 seconds for real-time updates
-      return () => clearInterval(interval);
+    if (status === "authenticated" && session?.user?.id) {
+      // In a real app, you would fetch this data. Here we simulate it.
+      setAllUserReports(allReports.filter((r) => r.userId === session.user.id));
     }
-  }, [status, userId]);
+  }, [session, status]);
 
   const filteredReports = useMemo(() => {
     return allUserReports.filter(
@@ -429,22 +363,11 @@ function DashboardPageContent() {
     return Object.entries(counts).map(([name, value]) => ({ name, value }));
   }, [allUserReports]);
 
-  const handleDelete = async (reportId: string) => {
-    try {
-      const response = await fetch(`/api/reports/${reportId}`, {
-        method: "DELETE",
-      });
-      if (response.ok) {
-        setAllUserReports(
-          allUserReports.filter((report) => report.id !== reportId)
-        );
-        toast.success("Report deleted from your vault.");
-      } else {
-        toast.error("Failed to delete report.");
-      }
-    } catch (error) {
-      toast.error("Error deleting report.");
-    }
+  const handleDelete = (reportId: string) => {
+    setAllUserReports(
+      allUserReports.filter((report) => report.id !== reportId)
+    );
+    toast.error("Report deleted from your vault.");
   };
 
   const handleSave = (updatedReport: UserReport) => {
@@ -472,66 +395,24 @@ function DashboardPageContent() {
 
   const PIE_COLORS = ["#3b82f6", "#f97316", "#10b981"];
 
-  // Show loading state if session is still loading
   if (status === "loading") {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <svg
-          className="animate-spin h-12 w-12 text-blue-600"
-          viewBox="0 0 24 24"
-        >
-          <circle
-            cx="12"
-            cy="12"
-            r="10"
-            stroke="currentColor"
-            strokeWidth="4"
-            fill="none"
-          />
-          <path
-            fill="currentColor"
-            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-          />
-        </svg>
-      </div>
-    );
-  }
-
-  // Show access denied if user is not authenticated
-  if (status === "unauthenticated") {
-    return (
-      <div
-        className={`flex min-h-screen items-center justify-center bg-slate-100 dark:bg-gray-900 p-4 ${orbitron.variable}`}
-      >
-        <GlobalStyle />
-        <Card className="text-center ui-card">
-          <CardHeader>
-            <CardTitle>Access Denied</CardTitle>
-            <CardDescription>
-              Please sign in to access the dashboard.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Link href="/auth/signin">
-              <Button className="ui-button">Sign In</Button>
-            </Link>
-          </CardContent>
-        </Card>
+      <div className="flex min-h-screen w-full items-center justify-center">
+        <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
       </div>
     );
   }
 
   return (
     <div
-      className={`flex min-h-screen bg-slate-100 dark:bg-gray-900 ${orbitron.variable}`}
+      className={`flex min-h-screen bg-slate-100 dark:bg-gray-900 ${orbitron.className}`}
     >
-      <GlobalStyle />
       <Sidebar activeView={activeView} setActiveView={setActiveView} />
       <main className="flex-1 p-6 lg:p-8 overflow-y-auto">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-gray-900 dark:text-white">
-            Welcome, {userName}
+            Welcome, {session?.user?.name || "User"}
           </h1>
           <p className="text-lg text-gray-500 dark:text-gray-400 mt-1">
             Here's your personal scam detection dashboard.
@@ -560,14 +441,14 @@ function DashboardPageContent() {
           />
           <KpiCard
             title="Guardian Score"
-            value={session?.user?.guardianScore || 0}
+            value={(session?.user as any)?.guardianScore || 0}
             icon={BarChart}
             color="text-green-500"
           />
           <Link href="/leaderboard" className="cursor-pointer">
             <KpiCard
               title="Leaderboard Rank"
-              value={`#${session?.user?.leaderboardRank || "N/A"}`}
+              value={`#${(session?.user as any)?.leaderboardRank || "N/A"}`}
               icon={Trophy}
               color="text-amber-500"
             />
@@ -576,7 +457,7 @@ function DashboardPageContent() {
 
         {/* Main Content Area */}
         {activeView === "vault" && (
-          <Card className="shadow-lg dark:bg-gray-800/50 mt-6 ui-card">
+          <Card className="shadow-lg dark:bg-gray-800/50 mt-6">
             <CardHeader className="flex-col sm:flex-row justify-between items-start sm:items-center">
               <div>
                 <CardTitle>My Reports</CardTitle>
@@ -589,16 +470,12 @@ function DashboardPageContent() {
                   <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input
                     placeholder="Search reports..."
-                    className="pl-8 ui-input"
+                    className="pl-8"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
                 </div>
-                <Select
-                  value={statusFilter}
-                  onValueChange={setStatusFilter}
-                  className="ui-select"
-                >
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
                   <SelectTrigger className="w-[180px]">
                     <SelectValue placeholder="Filter by status" />
                   </SelectTrigger>
@@ -610,128 +487,96 @@ function DashboardPageContent() {
                   </SelectContent>
                 </Select>
                 <Link href="/#report-scam">
-                  <Button className="ui-button">
+                  <Button>
                     <PlusCircle className="mr-2 h-4 w-4" />
                     Report New Scam
                   </Button>
                 </Link>
-                <Button
-                  variant="outline"
-                  onClick={fetchReports}
-                  className="ui-button"
-                >
-                  Refresh
-                </Button>
               </div>
             </CardHeader>
             <CardContent>
-              {isLoading ? (
-                <div className="flex justify-center items-center h-24">
-                  <svg
-                    className="animate-spin h-8 w-8 text-blue-600"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                      fill="none"
-                    />
-                    <path
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                    />
-                  </svg>
-                </div>
-              ) : (
-                <Table className="ui-table">
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Details</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>AI Risk Score</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredReports.length > 0 ? (
-                      filteredReports.map((report) => (
-                        <TableRow key={report.id}>
-                          <TableCell className="font-medium">
-                            {report.type}
-                          </TableCell>
-                          <TableCell className="max-w-sm truncate">
-                            {report.details}
-                          </TableCell>
-                          <TableCell>{report.date}</TableCell>
-                          <TableCell>{getStatusBadge(report.status)}</TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <span>{report.riskScore}/100</span>
-                              {getRiskBadge(report.riskScore)}
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  className="h-8 w-8 p-0 ui-button"
-                                >
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <ReportEditDialog
-                                  report={report}
-                                  onSave={handleSave}
-                                >
-                                  <DropdownMenuItem
-                                    onSelect={(e) => e.preventDefault()}
-                                  >
-                                    <Edit className="mr-2 h-4 w-4" />
-                                    Edit
-                                  </DropdownMenuItem>
-                                </ReportEditDialog>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Details</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>AI Risk Score</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredReports.length > 0 ? (
+                    filteredReports.map((report) => (
+                      <TableRow key={report.id}>
+                        <TableCell className="font-medium">
+                          {report.type}
+                        </TableCell>
+                        <TableCell className="max-w-sm truncate">
+                          {report.details}
+                        </TableCell>
+                        <TableCell>{report.date}</TableCell>
+                        <TableCell>{getStatusBadge(report.status)}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <span>{report.riskScore}/100</span>
+                            {getRiskBadge(report.riskScore)}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" className="h-8 w-8 p-0">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <ReportEditDialog
+                                report={report}
+                                onSave={handleSave}
+                              >
                                 <DropdownMenuItem
-                                  onClick={() => handleDownload(report)}
+                                  onSelect={(e) => e.preventDefault()}
                                 >
-                                  <Download className="mr-2 h-4 w-4" />
-                                  Download
+                                  <Edit className="mr-2 h-4 w-4" />
+                                  Edit
                                 </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  className="text-red-500"
-                                  onClick={() => handleDelete(report.id)}
-                                >
-                                  <Trash2 className="mr-2 h-4 w-4" />
-                                  Delete
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    ) : (
-                      <TableRow>
-                        <TableCell colSpan={6} className="h-24 text-center">
-                          No reports found. Report a scam to get started.
+                              </ReportEditDialog>
+                              <DropdownMenuItem
+                                onClick={() => handleDownload(report)}
+                              >
+                                <Download className="mr-2 h-4 w-4" />
+                                Download
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                className="text-red-500"
+                                onClick={() => handleDelete(report.id)}
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </TableCell>
                       </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              )}
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={6} className="h-24 text-center">
+                        No reports found.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
             </CardContent>
           </Card>
         )}
 
         {activeView === "analytics" && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-            <Card className="ui-card">
+            <Card>
               <CardHeader>
                 <CardTitle>Your Reporting Habits</CardTitle>
                 <CardDescription>
@@ -765,7 +610,7 @@ function DashboardPageContent() {
                 </div>
               </CardContent>
             </Card>
-            <Card className="ui-card">
+            <Card>
               <CardHeader>
                 <CardTitle>AI-Powered Insights</CardTitle>
                 <CardDescription>
@@ -799,7 +644,7 @@ function DashboardPageContent() {
         )}
 
         {activeView === "settings" && (
-          <Card className="shadow-lg dark:bg-gray-800/50 mt-6 ui-card">
+          <Card className="shadow-lg dark:bg-gray-800/50 mt-6">
             <CardHeader>
               <CardTitle>Account Settings</CardTitle>
               <CardDescription>
@@ -812,11 +657,7 @@ function DashboardPageContent() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <Label htmlFor="name">Name</Label>
-                    <Input
-                      id="name"
-                      defaultValue={userName}
-                      className="ui-input"
-                    />
+                    <Input id="name" defaultValue={session?.user?.name || ""} />
                   </div>
                   <div className="space-y-1">
                     <Label htmlFor="email">Email</Label>
@@ -825,13 +666,10 @@ function DashboardPageContent() {
                       type="email"
                       defaultValue={session?.user?.email || ""}
                       disabled
-                      className="ui-input"
                     />
                   </div>
                 </div>
-                <Button size="sm" className="ui-button">
-                  Update Profile
-                </Button>
+                <Button size="sm">Update Profile</Button>
               </div>
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Notifications</h3>
@@ -844,7 +682,7 @@ function DashboardPageContent() {
                       Get instant updates on your submissions.
                     </p>
                   </div>
-                  <Switch id="email-notifications" className="ui-switch" />
+                  <Switch id="email-notifications" />
                 </div>
               </div>
               <div className="space-y-4">
@@ -862,7 +700,6 @@ function DashboardPageContent() {
                     onClick={() => {
                       /* handleExportAll logic */
                     }}
-                    className="ui-button"
                   >
                     <FileDown className="mr-2 h-4 w-4" />
                     Export All
@@ -877,7 +714,7 @@ function DashboardPageContent() {
   );
 }
 
-// Default export wraps the page content with SessionProvider
+// The final default export wraps the page content with the SessionProvider
 export default function DashboardPageWrapper() {
   return (
     <SessionProvider>
