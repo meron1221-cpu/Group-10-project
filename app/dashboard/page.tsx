@@ -91,6 +91,7 @@ import { Textarea } from "@/components/ui/textarea";
 const orbitron = Orbitron({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700", "800", "900"],
+  variable: "--font-orbitron",
 });
 
 // --- TYPES & MOCK DATA ---
@@ -317,7 +318,7 @@ function Sidebar({
   ];
 
   return (
-    <aside className="w-64 flex-shrink-0 bg-gray-800 text-gray-300 flex flex-col p-4">
+    <aside className="w-64 flex-shrink-0 bg-gray-800 text-gray-300 flex flex-col p-4 font-orbitron">
       <div className="text-center py-4 border-b border-gray-700">
         <Link href="/" className="flex items-center justify-center space-x-2">
           <ShieldCheck className="h-8 w-8 text-blue-400" />
@@ -329,7 +330,7 @@ function Sidebar({
           <Button
             key={item.id}
             variant={activeView === item.id ? "secondary" : "ghost"}
-            className="w-full justify-start"
+            className="w-full justify-start font-orbitron"
             onClick={() => setActiveView(item.id)}
           >
             <item.icon className="mr-3 h-5 w-5" />
@@ -339,14 +340,17 @@ function Sidebar({
       </nav>
       <div className="mt-auto space-y-2">
         <Link href="/">
-          <Button variant="outline" className="w-full justify-start">
+          <Button
+            variant="outline"
+            className="w-full justify-start font-orbitron"
+          >
             <Home className="mr-3 h-5 w-5" />
             Back to Main Site
           </Button>
         </Link>
         <Button
           variant="destructive"
-          className="w-full justify-start"
+          className="w-full justify-start font-orbitron"
           onClick={() => signOut()}
         >
           <LogOut className="mr-3 h-5 w-5" />
@@ -431,10 +435,10 @@ function DashboardPageContent() {
 
   return (
     <div
-      className={`flex min-h-screen bg-slate-100 dark:bg-gray-900 ${orbitron.className}`}
+      className={`flex min-h-screen bg-slate-100 dark:bg-gray-900 font-orbitron ${orbitron.variable}`}
     >
       <Sidebar activeView={activeView} setActiveView={setActiveView} />
-      <main className="flex-1 p-6 lg:p-8 overflow-y-auto">
+      <main className="flex-1 p-6 lg:p-8 overflow-y-auto font-orbitron">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-gray-900 dark:text-white">
