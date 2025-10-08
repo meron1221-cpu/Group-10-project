@@ -2,7 +2,7 @@
 
 import { useState, useMemo, ReactNode } from "react";
 import { Orbitron } from "next/font/google";
-import { useSession, signOut } from "next-auth/react";
+import { useSession, signOut, SessionProvider } from "next-auth/react";
 import Link from "next/link";
 import {
   ShieldCheck,
@@ -357,8 +357,8 @@ function Sidebar({
   );
 }
 
-// --- MAIN DASHBOARD COMPONENT ---
-export default function DashboardPage() {
+// --- MAIN DASHBOARD CONTENT COMPONENT ---
+function DashboardPageContent() {
   const { data: session } = useSession();
   const currentUser = session?.user || mockUser;
 
@@ -435,6 +435,7 @@ export default function DashboardPage() {
     >
       <Sidebar activeView={activeView} setActiveView={setActiveView} />
       <main className="flex-1 p-6 lg:p-8 overflow-y-auto">
+        {/* Header */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-gray-900 dark:text-white">
             Welcome, {currentUser.name}
@@ -444,6 +445,7 @@ export default function DashboardPage() {
           </p>
         </div>
 
+        {/* KPI Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
           <KpiCard
             title="Total Reports"
@@ -479,6 +481,7 @@ export default function DashboardPage() {
           </Link>
         </div>
 
+        {/* Main Content Area */}
         {activeView === "vault" && (
           <Card className="shadow-lg dark:bg-gray-800/50 mt-6">
             <CardHeader className="flex-col sm:flex-row justify-between items-start sm:items-center">
@@ -734,5 +737,14 @@ export default function DashboardPage() {
         )}
       </main>
     </div>
+  );
+}
+
+// ✅ FIX: The default export now wraps the page content with SessionProvider
+export default function DashboardPageWrapper() {
+  return (
+    <SessionProvider>
+      <DashboardPageContent />
+    </SessionProvider>
   );
 }
