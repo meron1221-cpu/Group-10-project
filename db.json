@@ -1,24 +1,10 @@
 {
   "users": [
     {
-      "username": "bez",
-      "email": "bezawitnisrane23@gmail.com",
-      "hashedPassword": "$2b$10$the2cx05Tr0dD14WIcS9WOY3VvpbKGXwpShvHbrll36VeoUp7jCG6",
-      "id": "user-1759868705191",
-      "points": 0
-    },
-    {
-      "username": "meron",
-      "email": "meronnisrane@gmail.com",
-      "hashedPassword": "$2b$10$mxBVGyQ6FC37jCT5QrlD4OKYoWELkWsavn2QQjymmKutbEMBXt.26",
-      "id": "user-1759924795412",
-      "points": 0
-    },
-    {
-      "username": "leul",
-      "email": "luelkostre@gmail.com",
-      "hashedPassword": "$2b$10$38OUrOD7pIMsgk5lh0hjp.Igj6TJSMcJkvP8Z/rPy7Pus0TSjKR1O",
-      "id": "user-1759925506402",
+      "username": "robel",
+      "email": "nisranemeronn@gmail.com",
+      "hashedPassword": "$2b$10$0e0Bvgp4y60TVmKT6CQPj.97qge8MpGdcbPSq/wgparp1TfIKHtqy",
+      "id": "user-1759957865934",
       "points": 0
     }
   ]
