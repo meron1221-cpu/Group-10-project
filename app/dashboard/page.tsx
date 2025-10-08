@@ -16,15 +16,15 @@ import {
   Search,
   MoreHorizontal,
   BarChart,
+  Settings,
+  Save,
   Trophy,
   LogOut,
   Home,
-  Save,
+  Loader2,
+  FileDown,
   TrendingUp,
   ShieldQuestion,
-  FileDown,
-  Loader2,
-  Settings,
 } from "lucide-react";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
@@ -37,6 +37,8 @@ import {
   Tooltip as RechartsTooltip,
   Legend,
 } from "recharts";
+
+// UI Components
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -80,12 +82,15 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { Skeleton } from "@/components/ui/skeleton";
 
+// --- FONT SETUP ---
 const orbitron = Orbitron({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700", "800", "900"],
 });
 
+// --- TYPES ---
 interface UserReport {
   id: string;
   userId: string;
@@ -96,6 +101,8 @@ interface UserReport {
   riskScore: number;
   severity: "Low" | "Medium" | "High";
 }
+
+// --- HELPER COMPONENTS & FUNCTIONS ---
 
 function KpiCard({
   title,
@@ -123,7 +130,127 @@ function KpiCard({
   );
 }
 
-// ... (getStatusBadge, getRiskBadge, and ReportEditDialog components remain the same)
+const getStatusBadge = (status: UserReport["status"]) => {
+  switch (status) {
+    case "Verified Scam":
+      return (
+        <Badge variant="destructive" className="flex items-center gap-1">
+          <ShieldCheck className="h-3 w-3" /> {status}
+        </Badge>
+      );
+    case "Under Review":
+      return (
+        <Badge variant="secondary" className="flex items-center gap-1">
+          <Clock className="h-3 w-3" /> {status}
+        </Badge>
+      );
+    case "Pending":
+    default:
+      return (
+        <Badge variant="outline" className="flex items-center gap-1">
+          <AlertCircle className="h-3 w-3" /> {status}
+        </Badge>
+      );
+  }
+};
+
+const getRiskBadge = (score: number) => {
+  if (score > 80)
+    return (
+      <Badge variant="destructive" className="bg-red-500/20 text-red-500">
+        High
+      </Badge>
+    );
+  if (score > 50)
+    return (
+      <Badge variant="secondary" className="bg-yellow-500/20 text-yellow-500">
+        Medium
+      </Badge>
+    );
+  return (
+    <Badge variant="outline" className="bg-green-500/20 text-green-500">
+      Low
+    </Badge>
+  );
+};
+
+function ReportEditDialog({
+  report,
+  onSave,
+  children,
+}: {
+  report: UserReport;
+  onSave: (updatedReport: UserReport) => void;
+  children: ReactNode;
+}) {
+  const [details, setDetails] = useState(report.details);
+  const [type, setType] = useState(report.type);
+
+  const handleSave = async () => {
+    const updatedReport = { ...report, details, type };
+    try {
+      const response = await fetch(`/api/reports/${report.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updatedReport),
+      });
+      if (response.ok) {
+        onSave(updatedReport);
+        toast.success("Report updated successfully!");
+      } else {
+        toast.error("Failed to update report.");
+      }
+    } catch (error) {
+      toast.error("Error updating report.");
+    }
+  };
+
+  return (
+    <Dialog>
+      <DialogTrigger asChild>{children}</DialogTrigger>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Edit Report</DialogTitle>
+          <DialogDescription>
+            Update the details for your report.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-4 py-4">
+          <div className="grid gap-2">
+            <Label htmlFor="type">Type</Label>
+            <Select value={type} onValueChange={setType}>
+              <SelectTrigger id="type">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Phishing">Phishing</SelectItem>
+                <SelectItem value="Fake Job Offer">Fake Job Offer</SelectItem>
+                <SelectItem value="Bank Impersonation">
+                  Bank Impersonation
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="details">Details</Label>
+            <Textarea
+              id="details"
+              value={details}
+              onChange={(e) => setDetails(e.target.value)}
+              rows={4}
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button onClick={handleSave}>
+            <Save className="mr-2 h-4 w-4" />
+            Save Changes
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 function Sidebar({
   activeView,
@@ -137,6 +264,7 @@ function Sidebar({
     { id: "analytics", label: "Analytics", icon: BarChart },
     { id: "settings", label: "Settings", icon: Settings },
   ];
+
   return (
     <aside className="w-64 flex-shrink-0 bg-gray-800 text-gray-300 flex flex-col p-4">
       <div className="text-center py-4 border-b border-gray-700">
@@ -178,6 +306,7 @@ function Sidebar({
   );
 }
 
+// --- MAIN DASHBOARD CONTENT COMPONENT ---
 function DashboardPageContent() {
   const { data: session, status } = useSession();
   const [allUserReports, setAllUserReports] = useState<UserReport[]>([]);
@@ -186,8 +315,9 @@ function DashboardPageContent() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const fetchUserReports = async () => {
+  const fetchUserReports = useCallback(async () => {
     if (!session?.user?.id) return;
+
     setIsLoadingReports(true);
     try {
       const response = await fetch("/api/user-reports");
@@ -202,13 +332,13 @@ function DashboardPageContent() {
     } finally {
       setIsLoadingReports(false);
     }
-  };
+  }, [session?.user?.id]);
 
   useEffect(() => {
     if (status === "authenticated") {
       fetchUserReports();
     }
-  }, [status]);
+  }, [status, fetchUserReports]);
 
   const filteredReports = useMemo(() => {
     return allUserReports.filter(
@@ -219,23 +349,73 @@ function DashboardPageContent() {
     );
   }, [allUserReports, searchTerm, statusFilter]);
 
-  const kpiData = useMemo(
-    () => ({
-      total: allUserReports.length,
-      verified: allUserReports.filter((r) => r.status === "Verified Scam")
-        .length,
-      pending: allUserReports.filter(
-        (r) => r.status === "Pending" || r.status === "Under Review"
-      ).length,
-    }),
-    [allUserReports]
-  );
+  const kpiData = useMemo(() => {
+    const total = allUserReports.length;
+    const verified = allUserReports.filter(
+      (r) => r.status === "Verified Scam"
+    ).length;
+    const pending = allUserReports.filter(
+      (r) => r.status === "Pending" || r.status === "Under Review"
+    ).length;
+    return { total, verified, pending };
+  }, [allUserReports]);
 
-  // ... (handleDelete, handleSave, handleDownload, etc. remain the same)
+  const reportTypeDistribution = useMemo(() => {
+    const counts = allUserReports.reduce((acc, report) => {
+      acc[report.type] = (acc[report.type] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    return Object.entries(counts).map(([name, value]) => ({ name, value }));
+  }, [allUserReports]);
+
+  const handleDelete = async (reportId: string) => {
+    try {
+      const response = await fetch(`/api/reports/${reportId}`, {
+        method: "DELETE",
+      });
+      if (response.ok) {
+        setAllUserReports(
+          allUserReports.filter((report) => report.id !== reportId)
+        );
+        toast.success("Report deleted from your vault.");
+      } else {
+        toast.error("Failed to delete report.");
+      }
+    } catch (error) {
+      toast.error("Error deleting report.");
+    }
+  };
+
+  const handleSave = (updatedReport: UserReport) => {
+    setAllUserReports(
+      allUserReports.map((r) => (r.id === updatedReport.id ? updatedReport : r))
+    );
+  };
+
+  const handleDownload = (report: UserReport) => {
+    const doc = new jsPDF();
+    doc.text("Scam Report Summary", 14, 22);
+    autoTable(doc, {
+      startY: 30,
+      body: [
+        ["ID", report.id],
+        ["Type", report.type],
+        ["Date", report.date],
+        ["Status", report.status],
+        ["Risk", `${report.riskScore}/100`],
+        ["Details", report.details],
+      ],
+    });
+    doc.save(`report-${report.id}.pdf`);
+  };
+
+  const PIE_COLORS = ["#3b82f6", "#f97316", "#10b981"];
 
   if (status === "loading") {
     return (
-      <div className="flex min-h-screen w-full items-center justify-center">
+      <div
+        className={`flex min-h-screen items-center justify-center bg-slate-100 dark:bg-gray-900 ${orbitron.className}`}
+      >
         <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
       </div>
     );
@@ -247,6 +427,7 @@ function DashboardPageContent() {
     >
       <Sidebar activeView={activeView} setActiveView={setActiveView} />
       <main className="flex-1 p-6 lg:p-8 overflow-y-auto">
+        {/* Header */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-gray-900 dark:text-white">
             Welcome, {session?.user?.name || "User"}
@@ -256,6 +437,7 @@ function DashboardPageContent() {
           </p>
         </div>
 
+        {/* KPI Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
           <KpiCard
             title="Total Reports"
@@ -291,26 +473,274 @@ function DashboardPageContent() {
           </Link>
         </div>
 
+        {/* Main Content Area */}
         {activeView === "vault" && (
           <Card className="shadow-lg dark:bg-gray-800/50 mt-6">
-            <CardHeader>{/* ... CardHeader content ... */}</CardHeader>
+            <CardHeader className="flex-col sm:flex-row justify-between items-start sm:items-center">
+              <div>
+                <CardTitle>My Reports</CardTitle>
+                <CardDescription>
+                  A log of all the scams you've helped identify.
+                </CardDescription>
+              </div>
+              <div className="flex gap-2 mt-4 sm:mt-0">
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search reports..."
+                    className="pl-8"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Filter by status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Statuses</SelectItem>
+                    <SelectItem value="Verified Scam">Verified Scam</SelectItem>
+                    <SelectItem value="Under Review">Under Review</SelectItem>
+                    <SelectItem value="Pending">Pending</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Link href="/#report-scam">
+                  <Button>
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    Report New Scam
+                  </Button>
+                </Link>
+              </div>
+            </CardHeader>
             <CardContent>
               {isLoadingReports ? (
-                <div className="flex justify-center items-center h-24">
-                  <Loader2 className="h-8 w-8 animate-spin" />
+                <div className="space-y-4">
+                  <Skeleton className="h-12 w-full" />
+                  <Skeleton className="h-12 w-full" />
+                  <Skeleton className="h-12 w-full" />
                 </div>
               ) : (
-                <Table>{/* ... Table content ... */}</Table>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Details</TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>AI Risk Score</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredReports.length > 0 ? (
+                      filteredReports.map((report) => (
+                        <TableRow key={report.id}>
+                          <TableCell className="font-medium">
+                            {report.type}
+                          </TableCell>
+                          <TableCell className="max-w-sm truncate">
+                            {report.details}
+                          </TableCell>
+                          <TableCell>{report.date}</TableCell>
+                          <TableCell>{getStatusBadge(report.status)}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <span>{report.riskScore}/100</span>
+                              {getRiskBadge(report.riskScore)}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" className="h-8 w-8 p-0">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <ReportEditDialog
+                                  report={report}
+                                  onSave={handleSave}
+                                >
+                                  <DropdownMenuItem
+                                    onSelect={(e) => e.preventDefault()}
+                                  >
+                                    <Edit className="mr-2 h-4 w-4" />
+                                    Edit
+                                  </DropdownMenuItem>
+                                </ReportEditDialog>
+                                <DropdownMenuItem
+                                  onClick={() => handleDownload(report)}
+                                >
+                                  <Download className="mr-2 h-4 w-4" />
+                                  Download
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  className="text-red-500"
+                                  onClick={() => handleDelete(report.id)}
+                                >
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={6} className="h-24 text-center">
+                          No reports found.
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
               )}
             </CardContent>
           </Card>
         )}
-        {/* ... other views ... */}
+
+        {activeView === "analytics" && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Your Reporting Habits</CardTitle>
+                <CardDescription>
+                  Breakdown of the scam types you've reported.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="w-full h-[300px]">
+                  <ResponsiveContainer>
+                    <PieChart>
+                      <Pie
+                        data={reportTypeDistribution}
+                        dataKey="value"
+                        nameKey="name"
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={100}
+                        label
+                      >
+                        {reportTypeDistribution.map((entry, index) => (
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={PIE_COLORS[index % PIE_COLORS.length]}
+                          />
+                        ))}
+                      </Pie>
+                      <RechartsTooltip />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>AI-Powered Insights</CardTitle>
+                <CardDescription>
+                  Trends and suggestions based on your reports.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-start gap-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                  <TrendingUp className="h-5 w-5 text-blue-500 mt-1" />
+                  <div>
+                    <h4 className="font-semibold">Trending Threat</h4>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                      You've reported an increasing number of 'Phishing' scams.
+                      Stay vigilant with emails from unknown senders.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                  <ShieldQuestion className="h-5 w-5 text-green-500 mt-1" />
+                  <div>
+                    <h4 className="font-semibold">AI Suggestion</h4>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                      Consider enabling Two-Factor Authentication (2FA) on your
+                      primary email account to better protect against phishing.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {activeView === "settings" && (
+          <Card className="shadow-lg dark:bg-gray-800/50 mt-6">
+            <CardHeader>
+              <CardTitle>Account Settings</CardTitle>
+              <CardDescription>
+                Manage your profile, notifications, and data.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-8">
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Profile</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <Label htmlFor="name">Name</Label>
+                    <Input id="name" defaultValue={session?.user?.name || ""} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      defaultValue={session?.user?.email || ""}
+                      disabled
+                    />
+                  </div>
+                </div>
+                <Button size="sm">Update Profile</Button>
+              </div>
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Notifications</h3>
+                <div className="flex items-center justify-between rounded-lg border p-4 dark:border-gray-700">
+                  <div>
+                    <Label htmlFor="email-notifications">
+                      Email me when a report is verified
+                    </Label>
+                    <p className="text-sm text-muted-foreground">
+                      Get instant updates on your submissions.
+                    </p>
+                  </div>
+                  <Switch id="email-notifications" />
+                </div>
+              </div>
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Data Management</h3>
+                <div className="flex items-center justify-between rounded-lg border p-4 dark:border-gray-700">
+                  <div>
+                    <Label>Export My Data</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Download a PDF of all your submitted reports.
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      /* handleExportAll logic */
+                    }}
+                  >
+                    <FileDown className="mr-2 h-4 w-4" />
+                    Export All
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </main>
     </div>
   );
 }
 
+// The final default export wraps the page content with the SessionProvider
 export default function DashboardPageWrapper() {
   return (
     <SessionProvider>
