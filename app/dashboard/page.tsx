@@ -37,8 +37,6 @@ import {
   Tooltip as RechartsTooltip,
   Legend,
 } from "recharts";
-
-// UI Components
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -84,13 +82,11 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 
-// --- FONT SETUP ---
 const orbitron = Orbitron({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700", "800", "900"],
 });
 
-// --- TYPES ---
 interface UserReport {
   id: string;
   userId: string;
@@ -101,8 +97,6 @@ interface UserReport {
   riskScore: number;
   severity: "Low" | "Medium" | "High";
 }
-
-// --- HELPER COMPONENTS & FUNCTIONS ---
 
 function KpiCard({
   title,
@@ -144,7 +138,6 @@ const getStatusBadge = (status: UserReport["status"]) => {
           <Clock className="h-3 w-3" /> {status}
         </Badge>
       );
-    case "Pending":
     default:
       return (
         <Badge variant="outline" className="flex items-center gap-1">
@@ -306,7 +299,6 @@ function Sidebar({
   );
 }
 
-// --- MAIN DASHBOARD CONTENT COMPONENT ---
 function DashboardPageContent() {
   const { data: session, status } = useSession();
   const [allUserReports, setAllUserReports] = useState<UserReport[]>([]);
@@ -317,7 +309,6 @@ function DashboardPageContent() {
 
   const fetchUserReports = useCallback(async () => {
     if (!session?.user?.id) return;
-
     setIsLoadingReports(true);
     try {
       const response = await fetch("/api/user-reports");
@@ -349,16 +340,17 @@ function DashboardPageContent() {
     );
   }, [allUserReports, searchTerm, statusFilter]);
 
-  const kpiData = useMemo(() => {
-    const total = allUserReports.length;
-    const verified = allUserReports.filter(
-      (r) => r.status === "Verified Scam"
-    ).length;
-    const pending = allUserReports.filter(
-      (r) => r.status === "Pending" || r.status === "Under Review"
-    ).length;
-    return { total, verified, pending };
-  }, [allUserReports]);
+  const kpiData = useMemo(
+    () => ({
+      total: allUserReports.length,
+      verified: allUserReports.filter((r) => r.status === "Verified Scam")
+        .length,
+      pending: allUserReports.filter(
+        (r) => r.status === "Pending" || r.status === "Under Review"
+      ).length,
+    }),
+    [allUserReports]
+  );
 
   const reportTypeDistribution = useMemo(() => {
     const counts = allUserReports.reduce((acc, report) => {
@@ -427,7 +419,6 @@ function DashboardPageContent() {
     >
       <Sidebar activeView={activeView} setActiveView={setActiveView} />
       <main className="flex-1 p-6 lg:p-8 overflow-y-auto">
-        {/* Header */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-gray-900 dark:text-white">
             Welcome, {session?.user?.name || "User"}
@@ -437,7 +428,6 @@ function DashboardPageContent() {
           </p>
         </div>
 
-        {/* KPI Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
           <KpiCard
             title="Total Reports"
@@ -473,7 +463,6 @@ function DashboardPageContent() {
           </Link>
         </div>
 
-        {/* Main Content Area */}
         {activeView === "vault" && (
           <Card className="shadow-lg dark:bg-gray-800/50 mt-6">
             <CardHeader className="flex-col sm:flex-row justify-between items-start sm:items-center">
@@ -740,7 +729,6 @@ function DashboardPageContent() {
   );
 }
 
-// The final default export wraps the page content with the SessionProvider
 export default function DashboardPageWrapper() {
   return (
     <SessionProvider>
