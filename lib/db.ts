@@ -1,4 +1,3 @@
-// This file acts as our simple, file-based database layer.
 import fs from "fs";
 import path from "path";
 
@@ -10,8 +9,8 @@ interface User {
   username: string;
   email: string;
   hashedPassword?: string;
-  points?: number;
-  reports?: number; // Added to track report count
+  points: number;
+  reports: number;
   resetToken?: string | null;
   resetTokenExpiry?: Date | null;
 }
@@ -30,13 +29,19 @@ function readDB(): Database {
     const data = fs.readFileSync(dbPath, "utf-8");
     return JSON.parse(data) as Database;
   } catch (error) {
+    console.error("DB_READ_ERROR", error);
     return { users: [] };
   }
 }
 
 // Function to write the entire database back to the JSON file
 function writeDB(data: Database) {
-  fs.writeFileSync(dbPath, JSON.stringify(data, null, 2));
+  try {
+    fs.writeFileSync(dbPath, JSON.stringify(data, null, 2));
+  } catch (error) {
+    console.error("DB_WRITE_ERROR", error);
+    throw new Error("Failed to write to database");
+  }
 }
 
 // --- Database Helper Functions ---
@@ -82,7 +87,9 @@ export const db = {
         ...data,
         id: `user-${Date.now()}`,
         points: 0,
-        reports: 0, // Initialize reports count
+        reports: 0,
+        resetToken: null,
+        resetTokenExpiry: null,
       };
       database.users.push(user);
       writeDB(database);
@@ -101,9 +108,22 @@ export const db = {
         (user) => user.email === email
       );
       if (userIndex > -1) {
-        database.users[userIndex] = { ...database.users[userIndex], ...data };
+        // Ensure points and reports are not set to undefined
+        const updatedUser = {
+          ...database.users[userIndex],
+          ...data,
+          points:
+            data.points !== undefined
+              ? data.points
+              : database.users[userIndex].points || 0,
+          reports:
+            data.reports !== undefined
+              ? data.reports
+              : database.users[userIndex].reports || 0,
+        };
+        database.users[userIndex] = updatedUser;
         writeDB(database);
-        return database.users[userIndex];
+        return updatedUser;
       }
       return null;
     },
