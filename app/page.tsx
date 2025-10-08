@@ -125,17 +125,17 @@ const enTranslations = {
   teamMember2Name: "Nahom Michael",
   teamMember2Role: "Head of Engineering",
   teamMember2Bio:
-    "Leading the development of our robust and scalable infrastructure.",
+    "Leading the development of our robust and scalable infrastructure on Back-End.",
   teamMember3Name: "Dawit Addis",
   teamMember3Role: "Cybersecurity Analyst",
   teamMember3Bio:
-    "Analyzing emerging threats and ensuring our defenses are always one step ahead.",
+    "Making Front-End and Analyzing emerging threats and ensuring our defenses are always one step ahead.",
   teamMember4Name: "Meron Nisrane",
   teamMember4Role: "Penetration Tester",
   teamMember4Bio:
     "Proactively finding and fixing vulnerabilities to keep our platform secure.",
   teamMember5Name: "Amanuel",
-  teamMember5Role: "Product Manager",
+
   teamMember5Bio:
     "Defining the vision and roadmap to make cybersecurity accessible to everyone.",
   // Scam Types
@@ -284,7 +284,7 @@ const translations: Record<"en" | "am", typeof enTranslations> = {
     teamMember4Role: "የስርዓት ஊடுருவல் ሞካሪ",
     teamMember4Bio: "የስርዓታችንን ደህንነት ለመጠበቅ ተጋላጭነቶችን በንቃት መፈለግ እና ማስተካከል።",
     teamMember5Name: "አማኑኤል",
-    teamMember5Role: "የምርት ሥራ አስኪያጅ",
+
     teamMember5Bio: "የሳይበር ደህንነትን ለሁሉም ተደራሽ ለማድረግ ራዕይን እና ፍኖተ ካርታን መወሰን።",
     // Scam Types
     scamTypePhishing: "ማስገር (Phishing)",
@@ -1473,7 +1473,7 @@ function TeamSection() {
   const teamMembers = [
     {
       name: t("teamMember1Name"),
-      role: t("teamMember1Role"),
+
       bio: t("teamMember1Bio"),
       gender: "male",
       expertise: ["AI/ML", "NLP"],
@@ -1484,7 +1484,7 @@ function TeamSection() {
     },
     {
       name: t("teamMember2Name"),
-      role: t("teamMember2Role"),
+
       bio: t("teamMember2Bio"),
       gender: "male",
       expertise: ["Backend", "penetration tester"],
@@ -1495,11 +1495,11 @@ function TeamSection() {
     },
     {
       name: t("teamMember3Name"),
-      role: t("teamMember3Role"),
+
       bio: t("teamMember3Bio"),
       gender: "male",
       image: "/dave.jpg",
-      expertise: ["Threat Analysis", "SOC"],
+      expertise: ["Code Reviewer", "SOC"],
       social: {
         linkedin: "#",
         github: "https://github.com/dave-zed",
@@ -1507,11 +1507,11 @@ function TeamSection() {
     },
     {
       name: t("teamMember4Name"),
-      role: t("teamMember4Role"),
+
       bio: t("teamMember4Bio"),
       gender: "female",
       image: "/my.PNG",
-      expertise: ["Ethical Hacking", "Security Audits"],
+      expertise: ["Front-End", "Security Audits"],
       social: {
         linkedin: "https://et.linkedin.com/in/meron-nisrane-1882b629b",
         github: "https://github.com/meron1221-cpu",
@@ -1519,7 +1519,7 @@ function TeamSection() {
     },
     {
       name: t("teamMember5Name"),
-      role: t("teamMember5Role"),
+
       bio: t("teamMember5Bio"),
       gender: "male",
       expertise: ["Product", "UX/UI"],
