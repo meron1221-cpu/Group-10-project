@@ -245,6 +245,102 @@ function ReportEditDialog({
   );
 }
 
+function ReportSubmitDialog({
+  onSubmit,
+  children,
+}: {
+  onSubmit: (newReport: UserReport) => void;
+  children: ReactNode;
+}) {
+  const [type, setType] = useState("");
+  const [details, setDetails] = useState("");
+  const { data: session } = useSession();
+
+  const handleSubmit = async () => {
+    if (!session?.user?.id || !type || !details) {
+      toast.error("Please fill in all fields and ensure you're logged in.");
+      return;
+    }
+
+    const newReport: UserReport = {
+      id: `rep-${Date.now()}`,
+      userId: session.user.id,
+      type,
+      details,
+      date: new Date().toISOString().split("T")[0],
+      status: "Pending",
+      riskScore: Math.floor(Math.random() * 30) + 60,
+      severity: "Medium",
+    };
+
+    try {
+      const response = await fetch("/api/reports", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ scamType: type, description: details }),
+      });
+      if (response.ok) {
+        const data = await response.json();
+        onSubmit(data);
+        toast.success("Report submitted successfully!");
+        setType("");
+        setDetails("");
+      } else {
+        toast.error("Failed to submit report.");
+      }
+    } catch (error) {
+      toast.error("Error submitting report.");
+    }
+  };
+
+  return (
+    <Dialog>
+      <DialogTrigger asChild>{children}</DialogTrigger>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Submit New Report</DialogTitle>
+          <DialogDescription>
+            Provide details about the scam you encountered.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-4 py-4">
+          <div className="grid gap-2">
+            <Label htmlFor="type">Type</Label>
+            <Select value={type} onValueChange={setType}>
+              <SelectTrigger id="type">
+                <SelectValue placeholder="Select scam type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Phishing">Phishing</SelectItem>
+                <SelectItem value="Fake Job Offer">Fake Job Offer</SelectItem>
+                <SelectItem value="Bank Impersonation">
+                  Bank Impersonation
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="details">Details</Label>
+            <Textarea
+              id="details"
+              value={details}
+              onChange={(e) => setDetails(e.target.value)}
+              rows={4}
+              placeholder="Describe the scam..."
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button onClick={handleSubmit}>
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Submit Report
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function Sidebar({
   activeView,
   setActiveView,
@@ -278,6 +374,15 @@ function Sidebar({
             {item.label}
           </Button>
         ))}
+        <Link href="/leaderboard">
+          <Button
+            variant={activeView === "leaderboard" ? "secondary" : "ghost"}
+            className="w-full justify-start"
+          >
+            <Trophy className="mr-3 h-5 w-5" />
+            Leaderboard
+          </Button>
+        </Link>
       </nav>
       <div className="mt-auto space-y-2">
         <Link href="/">
@@ -302,6 +407,7 @@ function Sidebar({
 function DashboardPageContent() {
   const { data: session, status } = useSession();
   const [allUserReports, setAllUserReports] = useState<UserReport[]>([]);
+  const [userPoints, setUserPoints] = useState(0);
   const [isLoadingReports, setIsLoadingReports] = useState(true);
   const [activeView, setActiveView] = useState("vault");
   const [searchTerm, setSearchTerm] = useState("");
@@ -315,6 +421,7 @@ function DashboardPageContent() {
       if (response.ok) {
         const data = await response.json();
         setAllUserReports(data.reports || []);
+        setUserPoints(data.points || 0);
       } else {
         toast.error("Failed to fetch your reports.");
       }
@@ -340,36 +447,39 @@ function DashboardPageContent() {
     );
   }, [allUserReports, searchTerm, statusFilter]);
 
-  const kpiData = useMemo(
-    () => ({
-      total: allUserReports.length,
-      verified: allUserReports.filter((r) => r.status === "Verified Scam")
-        .length,
-      pending: allUserReports.filter(
-        (r) => r.status === "Pending" || r.status === "Under Review"
-      ).length,
-    }),
-    [allUserReports]
-  );
+  const totalReports = allUserReports.length;
+  const verifiedScams = allUserReports.filter(
+    (r) => r.status === "Verified Scam"
+  ).length;
+  const underReview = allUserReports.filter(
+    (r) => r.status === "Under Review"
+  ).length;
+  const averageRisk =
+    allUserReports.length > 0
+      ? Math.round(
+          allUserReports.reduce((sum, r) => sum + r.riskScore, 0) /
+            allUserReports.length
+        )
+      : 0;
 
   const reportTypeDistribution = useMemo(() => {
-    const counts = allUserReports.reduce((acc, report) => {
+    const types = allUserReports.reduce((acc, report) => {
       acc[report.type] = (acc[report.type] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
-    return Object.entries(counts).map(([name, value]) => ({ name, value }));
+    return Object.entries(types).map(([name, value]) => ({ name, value }));
   }, [allUserReports]);
 
-  const handleDelete = async (reportId: string) => {
+  const PIE_COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884D8"];
+
+  const handleDelete = async (id: string) => {
     try {
-      const response = await fetch(`/api/reports/${reportId}`, {
+      const response = await fetch(`/api/reports/${id}`, {
         method: "DELETE",
       });
       if (response.ok) {
-        setAllUserReports(
-          allUserReports.filter((report) => report.id !== reportId)
-        );
-        toast.success("Report deleted from your vault.");
+        toast.success("Report deleted successfully!");
+        fetchUserReports();
       } else {
         toast.error("Failed to delete report.");
       }
@@ -379,107 +489,102 @@ function DashboardPageContent() {
   };
 
   const handleSave = (updatedReport: UserReport) => {
-    setAllUserReports(
-      allUserReports.map((r) => (r.id === updatedReport.id ? updatedReport : r))
+    setAllUserReports((prev) =>
+      prev.map((r) => (r.id === updatedReport.id ? updatedReport : r))
     );
+  };
+
+  const handleSubmit = (newReport: UserReport) => {
+    setAllUserReports((prev) => [newReport, ...prev]);
+    fetchUserReports(); // Refresh points and reports
   };
 
   const handleDownload = (report: UserReport) => {
     const doc = new jsPDF();
-    doc.text("Scam Report Summary", 14, 22);
-    autoTable(doc, {
-      startY: 30,
-      body: [
-        ["ID", report.id],
-        ["Type", report.type],
-        ["Date", report.date],
-        ["Status", report.status],
-        ["Risk", `${report.riskScore}/100`],
-        ["Details", report.details],
-      ],
-    });
-    doc.save(`report-${report.id}.pdf`);
+    doc.text(`Report ID: ${report.id}`, 20, 20);
+    doc.text(`Type: ${report.type}`, 20, 30);
+    doc.text(`Date: ${report.date}`, 20, 40);
+    doc.text(`Status: ${report.status}`, 20, 50);
+    doc.text(`Details: ${report.details}`, 20, 60);
+    doc.save(`report_${report.id}.pdf`);
   };
 
-  const PIE_COLORS = ["#3b82f6", "#f97316", "#10b981"];
-
-  if (status === "loading") {
-    return (
-      <div
-        className={`flex min-h-screen items-center justify-center bg-slate-100 dark:bg-gray-900 ${orbitron.className}`}
-      >
-        <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
-      </div>
-    );
-  }
+  const handleExportAll = () => {
+    const doc = new jsPDF();
+    doc.text("All Submitted Reports", 20, 20);
+    autoTable(doc, {
+      startY: 30,
+      head: [["Type", "Details", "Date", "Status", "Risk Score", "Severity"]],
+      body: allUserReports.map((report) => [
+        report.type,
+        report.details,
+        report.date,
+        report.status,
+        report.riskScore,
+        report.severity,
+      ]),
+    });
+    doc.save(`all_reports_${session?.user?.id}.pdf`);
+  };
 
   return (
-    <div
-      className={`flex min-h-screen bg-slate-100 dark:bg-gray-900 ${orbitron.className}`}
-    >
+    <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
       <Sidebar activeView={activeView} setActiveView={setActiveView} />
-      <main className="flex-1 p-6 lg:p-8 overflow-y-auto">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white">
-            Welcome, {session?.user?.name || "User"}
-          </h1>
-          <p className="text-lg text-gray-500 dark:text-gray-400 mt-1">
-            Here's your personal scam detection dashboard.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
-          <KpiCard
-            title="Total Reports"
-            value={kpiData.total}
-            icon={FileText}
-            color="text-blue-500"
-          />
-          <KpiCard
-            title="Verified Scams"
-            value={kpiData.verified}
-            icon={ShieldCheck}
-            color="text-red-500"
-          />
-          <KpiCard
-            title="Pending Review"
-            value={kpiData.pending}
-            icon={Clock}
-            color="text-yellow-500"
-          />
-          <KpiCard
-            title="Guardian Score"
-            value={session?.user?.guardianScore || 0}
-            icon={BarChart}
-            color="text-green-500"
-          />
-          <Link href="/leaderboard" className="cursor-pointer">
-            <KpiCard
-              title="Leaderboard Rank"
-              value={`#${session?.user?.leaderboardRank || "N/A"}`}
-              icon={Trophy}
-              color="text-amber-500"
-            />
-          </Link>
-        </div>
-
+      <main className="flex-1 p-6 overflow-auto">
         {activeView === "vault" && (
-          <Card className="shadow-lg dark:bg-gray-800/50 mt-6">
-            <CardHeader className="flex-col sm:flex-row justify-between items-start sm:items-center">
-              <div>
-                <CardTitle>My Reports</CardTitle>
-                <CardDescription>
-                  A log of all the scams you've helped identify.
-                </CardDescription>
-              </div>
-              <div className="flex gap-2 mt-4 sm:mt-0">
-                <div className="relative">
-                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <>
+            <div className="flex justify-between items-center mb-6">
+              <h1 className="text-3xl font-bold">Evidence Vault</h1>
+              <ReportSubmitDialog onSubmit={handleSubmit}>
+                <Button variant="outline" size="sm">
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Submit New Report
+                </Button>
+              </ReportSubmitDialog>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              <KpiCard
+                title="Total Reports"
+                value={totalReports}
+                icon={FileText}
+                color="text-blue-500"
+              />
+              <KpiCard
+                title="Verified Scams"
+                value={verifiedScams}
+                icon={ShieldCheck}
+                color="text-green-500"
+              />
+              <KpiCard
+                title="Under Review"
+                value={underReview}
+                icon={Clock}
+                color="text-yellow-500"
+              />
+              <KpiCard
+                title="Avg Risk Score"
+                value={averageRisk}
+                icon={AlertCircle}
+                color="text-red-500"
+              />
+              <KpiCard
+                title="Guardian Points"
+                value={userPoints}
+                icon={Trophy}
+                color="text-yellow-500"
+              />
+            </div>
+            <Card className="shadow-lg dark:bg-gray-800/50 mb-6">
+              <CardHeader>
+                <CardTitle>Filter Reports</CardTitle>
+              </CardHeader>
+              <CardContent className="flex gap-4">
+                <div className="flex-1">
                   <Input
                     placeholder="Search reports..."
-                    className="pl-8"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full"
                   />
                 </div>
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -487,106 +592,110 @@ function DashboardPageContent() {
                     <SelectValue placeholder="Filter by status" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Statuses</SelectItem>
+                    <SelectItem value="all">All</SelectItem>
                     <SelectItem value="Verified Scam">Verified Scam</SelectItem>
                     <SelectItem value="Under Review">Under Review</SelectItem>
                     <SelectItem value="Pending">Pending</SelectItem>
                   </SelectContent>
                 </Select>
-                <Link href="/#report-scam">
-                  <Button>
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    Report New Scam
-                  </Button>
-                </Link>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {isLoadingReports ? (
-                <div className="space-y-4">
-                  <Skeleton className="h-12 w-full" />
-                  <Skeleton className="h-12 w-full" />
-                  <Skeleton className="h-12 w-full" />
-                </div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Details</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>AI Risk Score</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredReports.length > 0 ? (
-                      filteredReports.map((report) => (
-                        <TableRow key={report.id}>
-                          <TableCell className="font-medium">
-                            {report.type}
-                          </TableCell>
-                          <TableCell className="max-w-sm truncate">
-                            {report.details}
-                          </TableCell>
-                          <TableCell>{report.date}</TableCell>
-                          <TableCell>{getStatusBadge(report.status)}</TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <span>{report.riskScore}/100</span>
-                              {getRiskBadge(report.riskScore)}
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" className="h-8 w-8 p-0">
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <ReportEditDialog
-                                  report={report}
-                                  onSave={handleSave}
-                                >
-                                  <DropdownMenuItem
-                                    onSelect={(e) => e.preventDefault()}
+              </CardContent>
+            </Card>
+            <Card className="shadow-lg dark:bg-gray-800/50">
+              <CardHeader>
+                <CardTitle>Your Submitted Reports</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {isLoadingReports ? (
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-full" />
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Details</TableHead>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Risk</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredReports.length > 0 ? (
+                        filteredReports.map((report) => (
+                          <TableRow key={report.id}>
+                            <TableCell className="font-medium">
+                              {report.type}
+                            </TableCell>
+                            <TableCell className="max-w-sm truncate">
+                              {report.details}
+                            </TableCell>
+                            <TableCell>{report.date}</TableCell>
+                            <TableCell>
+                              {getStatusBadge(report.status)}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <span>{report.riskScore}/100</span>
+                                {getRiskBadge(report.riskScore)}
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    className="h-8 w-8 p-0"
                                   >
-                                    <Edit className="mr-2 h-4 w-4" />
-                                    Edit
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <ReportEditDialog
+                                    report={report}
+                                    onSave={handleSave}
+                                  >
+                                    <DropdownMenuItem
+                                      onSelect={(e) => e.preventDefault()}
+                                    >
+                                      <Edit className="mr-2 h-4 w-4" />
+                                      Edit
+                                    </DropdownMenuItem>
+                                  </ReportEditDialog>
+                                  <DropdownMenuItem
+                                    onClick={() => handleDownload(report)}
+                                  >
+                                    <Download className="mr-2 h-4 w-4" />
+                                    Download
                                   </DropdownMenuItem>
-                                </ReportEditDialog>
-                                <DropdownMenuItem
-                                  onClick={() => handleDownload(report)}
-                                >
-                                  <Download className="mr-2 h-4 w-4" />
-                                  Download
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  className="text-red-500"
-                                  onClick={() => handleDelete(report.id)}
-                                >
-                                  <Trash2 className="mr-2 h-4 w-4" />
-                                  Delete
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
+                                  <DropdownMenuItem
+                                    className="text-red-500"
+                                    onClick={() => handleDelete(report.id)}
+                                  >
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Delete
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={6} className="h-24 text-center">
+                            No reports found.
                           </TableCell>
                         </TableRow>
-                      ))
-                    ) : (
-                      <TableRow>
-                        <TableCell colSpan={6} className="h-24 text-center">
-                          No reports found.
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
+                      )}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          </>
         )}
 
         {activeView === "analytics" && (
@@ -709,13 +818,7 @@ function DashboardPageContent() {
                       Download a PDF of all your submitted reports.
                     </p>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      /* handleExportAll logic */
-                    }}
-                  >
+                  <Button variant="outline" size="sm" onClick={handleExportAll}>
                     <FileDown className="mr-2 h-4 w-4" />
                     Export All
                   </Button>
