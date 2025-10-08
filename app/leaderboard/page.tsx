@@ -1,16 +1,16 @@
 "use client";
 
-import { useState, useMemo, useEffect, ReactNode } from "react";
+import { useState, useEffect } from "react";
 import { Orbitron } from "next/font/google";
 import { useSession, SessionProvider } from "next-auth/react";
 import Link from "next/link";
 import {
   Trophy,
   Award,
-  User,
   ArrowLeft,
   Shield,
   RefreshCw,
+  Loader2,
 } from "lucide-react";
 import {
   Card,
@@ -34,28 +34,7 @@ import { toast } from "sonner";
 const orbitron = Orbitron({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700", "800", "900"],
-  variable: "--font-orbitron",
 });
-
-// --- GLOBAL CSS FOR ORBITRON ---
-const GlobalStyle = () => (
-  <style jsx global>{`
-    :root {
-      --font-orbitron: ${orbitron.style.fontFamily};
-    }
-    html,
-    body,
-    * {
-      font-family: var(--font-orbitron), sans-serif !important;
-    }
-    /* Ensure UI components use Orbitron */
-    .ui-card,
-    .ui-button,
-    .ui-table {
-      font-family: var(--font-orbitron), sans-serif !important;
-    }
-  `}</style>
-);
 
 interface LeaderboardUser {
   id: string;
@@ -98,7 +77,7 @@ function LeaderboardPageContent() {
 
   useEffect(() => {
     fetchLeaderboard();
-    const interval = setInterval(fetchLeaderboard, 30000); // Poll every 30 seconds for real-time updates
+    const interval = setInterval(fetchLeaderboard, 30000); // Poll every 30 seconds
     return () => clearInterval(interval);
   }, []);
 
@@ -108,9 +87,8 @@ function LeaderboardPageContent() {
 
   return (
     <div
-      className={`min-h-screen bg-gray-50 dark:bg-gray-900 py-12 ${orbitron.variable}`}
+      className={`min-h-screen bg-gray-50 dark:bg-gray-900 py-12 ${orbitron.className}`}
     >
-      <GlobalStyle />
       <header className="sticky top-0 z-10 border-b bg-white/80 backdrop-blur-sm dark:bg-gray-900/80 dark:border-gray-800">
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
           <Link
@@ -137,7 +115,6 @@ function LeaderboardPageContent() {
               size="icon"
               onClick={fetchLeaderboard}
               disabled={loading}
-              className="ui-button"
             >
               <RefreshCw
                 className={`h-5 w-5 ${loading ? "animate-spin" : ""}`}
@@ -161,18 +138,19 @@ function LeaderboardPageContent() {
 
         {loading ? (
           <div className="text-center text-gray-500 dark:text-gray-400">
-            Loading leaderboard...
+            <Loader2 className="mx-auto h-12 w-12 animate-spin" />
+            <p>Loading leaderboard...</p>
           </div>
         ) : error ? (
           <div className="text-center text-red-500">{error}</div>
         ) : (
-          <Card className="max-w-4xl mx-auto shadow-lg dark:bg-gray-800/50 ui-card">
+          <Card className="max-w-4xl mx-auto shadow-lg dark:bg-gray-800/50">
             <CardHeader>
               <CardTitle>Leaderboard</CardTitle>
               <CardDescription>Ranked by Guardian Points</CardDescription>
             </CardHeader>
             <CardContent>
-              <Table className="ui-table">
+              <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-[80px]">Rank</TableHead>
@@ -230,7 +208,6 @@ function LeaderboardPageContent() {
   );
 }
 
-// The final default export wraps the page content with the SessionProvider
 export default function LeaderboardPage() {
   return (
     <SessionProvider>
