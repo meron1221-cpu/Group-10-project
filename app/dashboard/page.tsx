@@ -274,7 +274,7 @@ function ReportSubmitDialog({
     };
 
     try {
-      const response = await fetch("/api/reports", {
+      const response = await fetch("/api/reports/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ scamType: type, description: details }),
@@ -474,7 +474,7 @@ function DashboardPageContent() {
 
   const handleDelete = async (id: string) => {
     try {
-      const response = await fetch(`/api/reports/${id}`, {
+      const response = await fetch(`/api/reports?id=${id}`, {
         method: "DELETE",
       });
       if (response.ok) {
@@ -501,6 +501,7 @@ function DashboardPageContent() {
 
   const handleDownload = (report: UserReport) => {
     const doc = new jsPDF();
+    doc.setFont("Orbitron", "normal");
     doc.text(`Report ID: ${report.id}`, 20, 20);
     doc.text(`Type: ${report.type}`, 20, 30);
     doc.text(`Date: ${report.date}`, 20, 40);
@@ -511,6 +512,7 @@ function DashboardPageContent() {
 
   const handleExportAll = () => {
     const doc = new jsPDF();
+    doc.setFont("Orbitron", "normal");
     doc.text("All Submitted Reports", 20, 20);
     autoTable(doc, {
       startY: 30,
@@ -523,12 +525,16 @@ function DashboardPageContent() {
         report.riskScore,
         report.severity,
       ]),
+      theme: "striped",
+      styles: { font: "Orbitron" },
     });
     doc.save(`all_reports_${session?.user?.id}.pdf`);
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div
+      className={`flex min-h-screen bg-gray-50 dark:bg-gray-900 ${orbitron.className}`}
+    >
       <Sidebar activeView={activeView} setActiveView={setActiveView} />
       <main className="flex-1 p-6 overflow-auto">
         {activeView === "vault" && (

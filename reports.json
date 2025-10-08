@@ -1,0 +1,24 @@
+{
+  "reports": [
+    {
+      "id": "rep-1759967372830",
+      "userId": "user-1759960842834",
+      "type": "Fake Job Offer",
+      "details": "esdrtyui",
+      "date": "2025-10-08",
+      "status": "Pending",
+      "riskScore": 65,
+      "severity": "Medium"
+    },
+    {
+      "id": "rep-1759967372302",
+      "userId": "user-1759960842834",
+      "type": "Fake Job Offer",
+      "details": "esdrtyui",
+      "date": "2025-10-08",
+      "status": "Pending",
+      "riskScore": 63,
+      "severity": "Medium"
+    }
+  ]
+}
