@@ -25,6 +25,7 @@ import {
   FileDown,
   TrendingUp,
   ShieldQuestion,
+  Upload,
 } from "lucide-react";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
@@ -96,7 +97,19 @@ interface UserReport {
   details: string;
   riskScore: number;
   severity: "Low" | "Medium" | "High";
+  evidenceFile?: File | null;
+  evidenceDataUrl?: string;
 }
+
+const SCAM_TYPES = [
+  "Phishing",
+  "Fake Job Offer",
+  "Bank Impersonation",
+  "Investment Fraud",
+  "Lottery Scam",
+  "Tech Support Scam",
+  "Others",
+];
 
 function KpiCard({
   title,
@@ -182,17 +195,9 @@ function ReportEditDialog({
   const handleSave = async () => {
     const updatedReport = { ...report, details, type };
     try {
-      const response = await fetch(`/api/reports/${report.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updatedReport),
-      });
-      if (response.ok) {
-        onSave(updatedReport);
-        toast.success("Report updated successfully!");
-      } else {
-        toast.error("Failed to update report.");
-      }
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      onSave(updatedReport);
+      toast.success("Report updated successfully!");
     } catch (error) {
       toast.error("Error updating report.");
     }
@@ -201,7 +206,7 @@ function ReportEditDialog({
   return (
     <Dialog>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className={`sm:max-w-[425px] ${orbitron.className}`}>
         <DialogHeader>
           <DialogTitle>Edit Report</DialogTitle>
           <DialogDescription>
@@ -216,11 +221,11 @@ function ReportEditDialog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Phishing">Phishing</SelectItem>
-                <SelectItem value="Fake Job Offer">Fake Job Offer</SelectItem>
-                <SelectItem value="Bank Impersonation">
-                  Bank Impersonation
-                </SelectItem>
+                {SCAM_TYPES.map((scamType) => (
+                  <SelectItem key={scamType} value={scamType}>
+                    {scamType}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -254,40 +259,69 @@ function ReportSubmitDialog({
 }) {
   const [type, setType] = useState("");
   const [details, setDetails] = useState("");
+  const [evidenceFile, setEvidenceFile] = useState<File | null>(null);
+  const [evidenceDataUrl, setEvidenceDataUrl] = useState<string | undefined>();
   const { data: session } = useSession();
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    setEvidenceFile(file);
+
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setEvidenceDataUrl(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setEvidenceDataUrl(undefined);
+    }
+  };
 
   const handleSubmit = async () => {
     if (!session?.user?.id || !type || !details) {
-      toast.error("Please fill in all fields and ensure you're logged in.");
+      toast.error("Please fill in all required fields.");
       return;
     }
 
-    const newReport: UserReport = {
-      id: `rep-${Date.now()}`,
-      userId: session.user.id,
-      type,
-      details,
-      date: new Date().toISOString().split("T")[0],
-      status: "Pending",
-      riskScore: Math.floor(Math.random() * 30) + 60,
-      severity: "Medium",
+    const reportId = Date.now();
+
+    const newScamForAdmin = {
+      id: reportId,
+      scamType: type,
+      description: details,
+      timestamp: reportId,
+      evidenceDataUrl,
     };
 
     try {
-      const response = await fetch("/api/reports/submit", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ scamType: type, description: details }),
-      });
-      if (response.ok) {
-        const data = await response.json();
-        onSubmit(data);
-        toast.success("Report submitted successfully!");
-        setType("");
-        setDetails("");
-      } else {
-        toast.error("Failed to submit report.");
-      }
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      const pendingScams = JSON.parse(
+        localStorage.getItem("pendingScams") || "[]"
+      );
+      pendingScams.push(newScamForAdmin);
+      localStorage.setItem("pendingScams", JSON.stringify(pendingScams));
+
+      const fullReport: UserReport = {
+        id: reportId.toString(),
+        userId: session.user.id,
+        type,
+        details,
+        date: new Date().toISOString().split("T")[0],
+        status: "Pending",
+        riskScore: Math.floor(Math.random() * 30) + 60,
+        severity: "Medium",
+        evidenceFile,
+        evidenceDataUrl,
+      };
+
+      onSubmit(fullReport);
+      toast.success("Report submitted! It is now pending review by an admin.");
+
+      setType("");
+      setDetails("");
+      setEvidenceFile(null);
+      setEvidenceDataUrl(undefined);
     } catch (error) {
       toast.error("Error submitting report.");
     }
@@ -296,26 +330,27 @@ function ReportSubmitDialog({
   return (
     <Dialog>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className={`sm:max-w-[425px] ${orbitron.className}`}>
         <DialogHeader>
           <DialogTitle>Submit New Report</DialogTitle>
           <DialogDescription>
-            Provide details about the scam you encountered.
+            Provide details about the scam you encountered. Your report will be
+            reviewed by an admin.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
-            <Label htmlFor="type">Type</Label>
+            <Label htmlFor="type">Type of Scam</Label>
             <Select value={type} onValueChange={setType}>
               <SelectTrigger id="type">
                 <SelectValue placeholder="Select scam type" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Phishing">Phishing</SelectItem>
-                <SelectItem value="Fake Job Offer">Fake Job Offer</SelectItem>
-                <SelectItem value="Bank Impersonation">
-                  Bank Impersonation
-                </SelectItem>
+                {SCAM_TYPES.map((scamType) => (
+                  <SelectItem key={scamType} value={scamType}>
+                    {scamType}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -329,11 +364,20 @@ function ReportSubmitDialog({
               placeholder="Describe the scam..."
             />
           </div>
+          <div className="grid gap-2">
+            <Label htmlFor="evidence">Upload Evidence (Optional)</Label>
+            <Input id="evidence" type="file" onChange={handleFileChange} />
+            {evidenceFile && (
+              <p className="text-sm text-muted-foreground">
+                File selected: {evidenceFile.name}
+              </p>
+            )}
+          </div>
         </div>
         <DialogFooter>
           <Button onClick={handleSubmit}>
             <PlusCircle className="mr-2 h-4 w-4" />
-            Submit Report
+            Submit for Review
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -417,13 +461,20 @@ function DashboardPageContent() {
     if (!session?.user?.id) return;
     setIsLoadingReports(true);
     try {
-      const response = await fetch("/api/user-reports");
-      if (response.ok) {
-        const data = await response.json();
-        setAllUserReports(data.reports || []);
-        setUserPoints(data.points || 0);
+      const storedReports = JSON.parse(
+        localStorage.getItem(`userReports_${session.user.id}`) || "[]"
+      );
+      if (storedReports.length > 0) {
+        setAllUserReports(storedReports);
       } else {
-        toast.error("Failed to fetch your reports.");
+        const response = await fetch("/api/user-reports");
+        if (response.ok) {
+          const data = await response.json();
+          setAllUserReports(data.reports || []);
+          setUserPoints(data.points || 0);
+        } else {
+          toast.error("Failed to fetch your reports.");
+        }
       }
     } catch (error) {
       toast.error("An error occurred while fetching reports.");
@@ -437,6 +488,51 @@ function DashboardPageContent() {
       fetchUserReports();
     }
   }, [status, fetchUserReports]);
+
+  useEffect(() => {
+    if (session?.user?.id && allUserReports.length > 0) {
+      localStorage.setItem(
+        `userReports_${session.user.id}`,
+        JSON.stringify(allUserReports)
+      );
+    }
+  }, [allUserReports, session?.user?.id]);
+
+  useEffect(() => {
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key === "approvedScams" && event.newValue) {
+        const approvedScams = JSON.parse(event.newValue);
+        const approvedIds = new Set(
+          approvedScams.map((s: any) => s.id.toString())
+        );
+
+        setAllUserReports((currentReports) => {
+          let wasUpdated = false;
+          const updatedReports = currentReports.map((report) => {
+            if (
+              approvedIds.has(report.id) &&
+              report.status !== "Verified Scam"
+            ) {
+              wasUpdated = true;
+              return { ...report, status: "Verified Scam" as const };
+            }
+            return report;
+          });
+
+          if (wasUpdated) {
+            toast.success("One of your reports has been verified as a scam!");
+            return updatedReports;
+          }
+          return currentReports;
+        });
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+    };
+  }, []);
 
   const filteredReports = useMemo(() => {
     return allUserReports.filter(
@@ -452,7 +548,7 @@ function DashboardPageContent() {
     (r) => r.status === "Verified Scam"
   ).length;
   const underReview = allUserReports.filter(
-    (r) => r.status === "Under Review"
+    (r) => r.status === "Under Review" || r.status === "Pending"
   ).length;
   const averageRisk =
     allUserReports.length > 0
@@ -473,46 +569,61 @@ function DashboardPageContent() {
   const PIE_COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884D8"];
 
   const handleDelete = async (id: string) => {
-    try {
-      const response = await fetch(`/api/reports?id=${id}`, {
-        method: "DELETE",
-      });
-      if (response.ok) {
-        toast.success("Report deleted successfully!");
-        fetchUserReports();
-      } else {
-        toast.error("Failed to delete report.");
-      }
-    } catch (error) {
-      toast.error("Error deleting report.");
-    }
+    const originalReports = allUserReports;
+    const updatedReports = originalReports.filter((r) => r.id !== id);
+    setAllUserReports(updatedReports);
+
+    const pendingScams = JSON.parse(
+      localStorage.getItem("pendingScams") || "[]"
+    );
+    const updatedPending = pendingScams.filter(
+      (s: any) => s.id.toString() !== id
+    );
+    localStorage.setItem("pendingScams", JSON.stringify(updatedPending));
+
+    toast.success("Report deleted successfully!");
   };
 
   const handleSave = (updatedReport: UserReport) => {
     setAllUserReports((prev) =>
       prev.map((r) => (r.id === updatedReport.id ? updatedReport : r))
     );
+    const pendingScams = JSON.parse(
+      localStorage.getItem("pendingScams") || "[]"
+    );
+    const updatedPending = pendingScams.map((s: any) =>
+      s.id.toString() === updatedReport.id
+        ? {
+            ...s,
+            scamType: updatedReport.type,
+            description: updatedReport.details,
+          }
+        : s
+    );
+    localStorage.setItem("pendingScams", JSON.stringify(updatedPending));
   };
 
   const handleSubmit = (newReport: UserReport) => {
     setAllUserReports((prev) => [newReport, ...prev]);
-    fetchUserReports(); // Refresh points and reports
   };
 
   const handleDownload = (report: UserReport) => {
     const doc = new jsPDF();
-    doc.setFont("Orbitron", "normal");
-    doc.text(`Report ID: ${report.id}`, 20, 20);
-    doc.text(`Type: ${report.type}`, 20, 30);
-    doc.text(`Date: ${report.date}`, 20, 40);
-    doc.text(`Status: ${report.status}`, 20, 50);
-    doc.text(`Details: ${report.details}`, 20, 60);
+    doc.setFont("helvetica", "bold");
+    doc.text("Scam Report", 20, 20);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Report ID: ${report.id}`, 20, 30);
+    doc.text(`Submitted By: ${session?.user?.name || "N/A"}`, 20, 40);
+    doc.text(`Date: ${report.date}`, 20, 50);
+    doc.text(`Status: ${report.status}`, 20, 60);
+    doc.text(`Risk Score: ${report.riskScore}/100`, 20, 70);
+    doc.text(`Details: ${report.details}`, 20, 80);
     doc.save(`report_${report.id}.pdf`);
   };
 
   const handleExportAll = () => {
     const doc = new jsPDF();
-    doc.setFont("Orbitron", "normal");
+    doc.setFont("helvetica", "normal");
     doc.text("All Submitted Reports", 20, 20);
     autoTable(doc, {
       startY: 30,
@@ -526,7 +637,7 @@ function DashboardPageContent() {
         report.severity,
       ]),
       theme: "striped",
-      styles: { font: "Orbitron" },
+      styles: { font: "helvetica" },
     });
     doc.save(`all_reports_${session?.user?.id}.pdf`);
   };
@@ -539,8 +650,15 @@ function DashboardPageContent() {
       <main className="flex-1 p-6 overflow-auto">
         {activeView === "vault" && (
           <>
-            <div className="flex justify-between items-center mb-6">
-              <h1 className="text-3xl font-bold">Evidence Vault</h1>
+            <div className="flex justify-between items-start mb-6">
+              <div>
+                {session?.user?.name && (
+                  <h1 className="text-3xl font-bold">
+                    Welcome, {session.user.name}!
+                  </h1>
+                )}
+                <p className="text-lg text-muted-foreground">Evidence Vault</p>
+              </div>
               <ReportSubmitDialog onSubmit={handleSubmit}>
                 <Button variant="outline" size="sm">
                   <PlusCircle className="mr-2 h-4 w-4" />
@@ -566,12 +684,6 @@ function DashboardPageContent() {
                 value={underReview}
                 icon={Clock}
                 color="text-yellow-500"
-              />
-              <KpiCard
-                title="Avg Risk Score"
-                value={averageRisk}
-                icon={AlertCircle}
-                color="text-red-500"
               />
               <KpiCard
                 title="Guardian Points"
@@ -666,6 +778,9 @@ function DashboardPageContent() {
                                   >
                                     <DropdownMenuItem
                                       onSelect={(e) => e.preventDefault()}
+                                      disabled={
+                                        report.status === "Verified Scam"
+                                      }
                                     >
                                       <Edit className="mr-2 h-4 w-4" />
                                       Edit

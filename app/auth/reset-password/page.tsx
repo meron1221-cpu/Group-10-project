@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Orbitron } from "next/font/google";
@@ -21,7 +22,8 @@ const orbitron = Orbitron({
   weight: ["400", "700"],
 });
 
-export default function ResetPasswordPage() {
+// ✅ Create a separate inner component that uses useSearchParams
+function ResetPasswordForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
@@ -70,50 +72,59 @@ export default function ResetPasswordPage() {
   };
 
   return (
+    <Card className="w-full max-w-sm shadow-2xl">
+      <CardHeader className="text-center">
+        <div className="mx-auto mb-4 flex items-center justify-center h-16 w-16 bg-blue-100 dark:bg-blue-900/30 rounded-full">
+          <Shield className="h-8 w-8 text-blue-600" />
+        </div>
+        <CardTitle className="text-2xl">Reset Your Password</CardTitle>
+        <CardDescription>Enter your new password below.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid gap-2">
+            <Label htmlFor="password">New Password</Label>
+            <Input
+              id="password"
+              type="password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              disabled={isLoading}
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="confirm-password">Confirm New Password</Label>
+            <Input
+              id="confirm-password"
+              type="password"
+              required
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              disabled={isLoading}
+            />
+          </div>
+          <Button type="submit" className="w-full" disabled={isLoading}>
+            {isLoading ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : null}
+            Reset Password
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
     <div
       className={`flex h-screen items-center justify-center bg-gray-100 dark:bg-gray-900 ${orbitron.className}`}
     >
-      <Card className="w-full max-w-sm shadow-2xl">
-        <CardHeader className="text-center">
-          <div className="mx-auto mb-4 flex items-center justify-center h-16 w-16 bg-blue-100 dark:bg-blue-900/30 rounded-full">
-            <Shield className="h-8 w-8 text-blue-600" />
-          </div>
-          <CardTitle className="text-2xl">Reset Your Password</CardTitle>
-          <CardDescription>Enter your new password below.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid gap-2">
-              <Label htmlFor="password">New Password</Label>
-              <Input
-                id="password"
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                disabled={isLoading}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="confirm-password">Confirm New Password</Label>
-              <Input
-                id="confirm-password"
-                type="password"
-                required
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                disabled={isLoading}
-              />
-            </div>
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : null}
-              Reset Password
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+      {/* ✅ Wrap the component using useSearchParams inside Suspense */}
+      <Suspense fallback={<div>Loading...</div>}>
+        <ResetPasswordForm />
+      </Suspense>
     </div>
   );
 }

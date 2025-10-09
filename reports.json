@@ -1,6 +1,46 @@
 {
   "reports": [
     {
+      "id": "rep-1759970063134",
+      "userId": "user-1759960842834",
+      "type": "Lottery Scam",
+      "details": "wertyuio rtyuio",
+      "date": "2025-10-09",
+      "status": "Pending",
+      "riskScore": 77,
+      "severity": "Medium"
+    },
+    {
+      "id": "rep-1759969315810",
+      "userId": "user-1759960842834",
+      "type": "Tech Support Scam",
+      "details": "hujkdfoi fduiszj",
+      "date": "2025-10-09",
+      "status": "Pending",
+      "riskScore": 78,
+      "severity": "Medium"
+    },
+    {
+      "id": "rep-1759969101800",
+      "userId": "user-1759960842834",
+      "type": "Investment Fraud",
+      "details": "gyukjl yuhikl",
+      "date": "2025-10-09",
+      "status": "Pending",
+      "riskScore": 75,
+      "severity": "Medium"
+    },
+    {
+      "id": "rep-1759968518874",
+      "userId": "user-1759960842834",
+      "type": "Fake Job Offer",
+      "details": "ersdtyuij yui",
+      "date": "2025-10-09",
+      "status": "Pending",
+      "riskScore": 88,
+      "severity": "Medium"
+    },
+    {
       "id": "rep-1759967372830",
       "userId": "user-1759960842834",
       "type": "Fake Job Offer",
