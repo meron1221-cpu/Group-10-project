@@ -1,0 +1,15 @@
+{
+  "model_type": "RandomForest",
+  "version": "1.0",
+  "training_date": "2025-10-12",
+  "accuracy": 1.0,
+  "classes": [
+    "bank_scam",
+    "fake_job",
+    "investment_fraud",
+    "legitimate",
+    "phishing"
+  ],
+  "feature_count": 190,
+  "training_samples": 3000
+}

@@ -452,6 +452,82 @@ interface ScamReport {
   timestamp: number;
 }
 
+// --- MOCK DATA ---
+const initialUsers: ManagedUser[] = [
+  {
+    id: 1,
+    name: "Aphran Mohammed",
+    email: "aphran@guardsphere.com",
+    role: "Admin",
+    lastActive: "2 min ago",
+    status: "Active",
+    isVerified: true,
+    scamReports: 12,
+    trustScore: 98,
+    riskLevel: "Low",
+  },
+  {
+    id: 2,
+    name: "Nahom Bekele",
+    email: "nahom.b@example.com",
+    role: "Analyst",
+    lastActive: "1 hour ago",
+    status: "Active",
+    isVerified: true,
+    scamReports: 45,
+    trustScore: 92,
+    riskLevel: "Low",
+  },
+  {
+    id: 3,
+    name: "Dawit Addis",
+    email: "dawit.a@example.com",
+    role: "User",
+    lastActive: "3 days ago",
+    status: "Active",
+    isVerified: false,
+    scamReports: 5,
+    trustScore: 75,
+    riskLevel: "Medium",
+  },
+  {
+    id: 4,
+    name: "Meron Nisrane",
+    email: "meron.n@example.com",
+    role: "User",
+    lastActive: "2 weeks ago",
+    status: "Suspended",
+    isVerified: false,
+    scamReports: 23,
+    trustScore: 34,
+    riskLevel: "High",
+  },
+  {
+    id: 5,
+    name: "Amanuel",
+    email: "amanuel@example.com",
+    role: "User",
+    lastActive: "1 month ago",
+    status: "Active",
+    isVerified: false,
+    scamReports: 2,
+    trustScore: 65,
+    riskLevel: "Medium",
+  },
+  {
+    id: 6,
+    name: "New User",
+    email: "new.user@example.com",
+    role: "User",
+    lastActive: "Never",
+    status: "Pending",
+    isVerified: false,
+    scamReports: 0,
+    trustScore: 50,
+    riskLevel: "Medium",
+  },
+];
+
 // --- LOGIN PAGE COMPONENT ---
 function LoginPage({ onLoginSuccess }: { onLoginSuccess: () => void }) {
   const [email, setEmail] = useState("");
@@ -946,83 +1022,14 @@ function UserFormDialog({
 }
 
 // --- UserManagementView ---
-const MemoizedUserManagementView = React.memo(function UserManagementView() {
+const MemoizedUserManagementView = React.memo(function UserManagementView({
+  users,
+  setUsers,
+}: {
+  users: ManagedUser[];
+  setUsers: React.Dispatch<React.SetStateAction<ManagedUser[]>>;
+}) {
   const { t } = useTranslations();
-  const [users, setUsers] = useState<ManagedUser[]>([
-    {
-      id: 1,
-      name: "Aphran Mohammed",
-      email: "aphran@guardsphere.com",
-      role: "Admin",
-      lastActive: "2 min ago",
-      status: "Active",
-      isVerified: true,
-      scamReports: 12,
-      trustScore: 98,
-      riskLevel: "Low",
-    },
-    {
-      id: 2,
-      name: "Nahom Bekele",
-      email: "nahom.b@example.com",
-      role: "Analyst",
-      lastActive: "1 hour ago",
-      status: "Active",
-      isVerified: true,
-      scamReports: 45,
-      trustScore: 92,
-      riskLevel: "Low",
-    },
-    {
-      id: 3,
-      name: "Dawit Addis",
-      email: "dawit.a@example.com",
-      role: "User",
-      lastActive: "3 days ago",
-      status: "Active",
-      isVerified: false,
-      scamReports: 5,
-      trustScore: 75,
-      riskLevel: "Medium",
-    },
-    {
-      id: 4,
-      name: "Meron Nisrane",
-      email: "meron.n@example.com",
-      role: "User",
-      lastActive: "2 weeks ago",
-      status: "Suspended",
-      isVerified: false,
-      scamReports: 23,
-      trustScore: 34,
-      riskLevel: "High",
-    },
-    {
-      id: 5,
-      name: "Amanuel",
-      email: "amanuel@example.com",
-      role: "User",
-      lastActive: "1 month ago",
-      status: "Active",
-      isVerified: false,
-      scamReports: 2,
-      trustScore: 65,
-      riskLevel: "Medium",
-    },
-    {
-      id: 6,
-      name: "New User",
-      email: "new.user@example.com",
-      role: "User",
-      lastActive: "Never",
-      status: "Pending",
-      isVerified: false,
-      scamReports: 0,
-      trustScore: 50,
-      riskLevel: "Medium",
-    },
-  ]);
-
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [roleFilter, setRoleFilter] = useState("all");
@@ -1078,8 +1085,10 @@ const MemoizedUserManagementView = React.memo(function UserManagementView() {
     role: ManagedUser["role"];
   }) => {
     if (editingUser) {
-      setUsers(
-        users.map((u) => (u.id === editingUser.id ? { ...u, ...formData } : u))
+      setUsers((prevUsers) =>
+        prevUsers.map((u) =>
+          u.id === editingUser.id ? { ...u, ...formData } : u
+        )
       );
       toast.success(`User "${formData.name}" has been updated.`);
     } else {
@@ -1093,7 +1102,7 @@ const MemoizedUserManagementView = React.memo(function UserManagementView() {
         trustScore: 50,
         riskLevel: "Medium",
       };
-      setUsers([newUser, ...users]);
+      setUsers((prevUsers) => [newUser, ...prevUsers]);
       toast.success(`New user "${formData.name}" has been created.`);
     }
   };
@@ -1101,7 +1110,7 @@ const MemoizedUserManagementView = React.memo(function UserManagementView() {
   const handleDeleteUser = (userId: number) => {
     if (confirm("Are you sure you want to permanently delete this user?")) {
       const userName = users.find((u) => u.id === userId)?.name;
-      setUsers(users.filter((u) => u.id !== userId));
+      setUsers((prevUsers) => prevUsers.filter((u) => u.id !== userId));
       toast.error(`User "${userName}" has been deleted.`);
     }
   };
@@ -1110,8 +1119,8 @@ const MemoizedUserManagementView = React.memo(function UserManagementView() {
     userId: number,
     newStatus: ManagedUser["status"]
   ) => {
-    setUsers(
-      users.map((u) => (u.id === userId ? { ...u, status: newStatus } : u))
+    setUsers((prevUsers) =>
+      prevUsers.map((u) => (u.id === userId ? { ...u, status: newStatus } : u))
     );
     toast.success(`User status updated to ${newStatus}.`);
   };
@@ -2123,7 +2132,11 @@ const MemoizedSettingsView = React.memo(function SettingsView() {
 });
 
 // --- DashboardView ---
-const MemoizedDashboardView = React.memo(function DashboardView() {
+const MemoizedDashboardView = React.memo(function DashboardView({
+  userReportCount,
+}: {
+  userReportCount: number;
+}) {
   const { t } = useTranslations();
   const { settings } = useContext(SettingsContext);
 
@@ -2145,29 +2158,29 @@ const MemoizedDashboardView = React.memo(function DashboardView() {
   const kpiData = [
     {
       title: t("totalScams"),
-      value: "18,432",
-      subtitle: "+201 in last 24h",
+      value: "0",
+      subtitle: "System is clean",
       icon: ShieldAlert,
       colorClass: "border-red-500",
     },
     {
       title: t("detectionRate"),
-      value: "99.7%",
-      subtitle: "Industry-leading accuracy",
+      value: "97%",
+      subtitle: "System learning in progress",
       icon: Target,
       colorClass: "border-blue-500",
     },
     {
       title: t("activeThreats"),
-      value: "14",
-      subtitle: "Under investigation",
+      value: "0",
+      subtitle: "No active investigations",
       icon: Activity,
       colorClass: "border-yellow-500",
     },
     {
       title: t("userReports"),
-      value: "256",
-      subtitle: "+12 today",
+      value: userReportCount.toString(),
+      subtitle: "Awaiting review",
       icon: Flag,
       colorClass: "border-green-500",
     },
@@ -2581,22 +2594,112 @@ function DashboardContent({ onLogout }: { onLogout: () => void }) {
   const [isScanUrlOpen, setIsScanUrlOpen] = useState(false);
   const [isReportScamOpen, setIsReportScamOpen] = useState(false);
   const [pendingScams, setPendingScams] = useState<ScamReport[]>([]);
+  const [managedUsers, setManagedUsers] = useState<ManagedUser[]>([]);
 
+  // Load initial data from localStorage or use mock data
   useEffect(() => {
-    const storedPending = localStorage.getItem("pendingScams");
-    if (storedPending) {
-      setPendingScams(JSON.parse(storedPending));
+    try {
+      const storedPending = localStorage.getItem("pendingScams");
+      if (storedPending) {
+        setPendingScams(JSON.parse(storedPending));
+      } else {
+        // Seed initial pending reports if none exist
+        const initialPendingReports = [
+          {
+            id: 1,
+            scamType: "Phishing",
+            description: "Fake login page for a bank.",
+            timestamp: Date.now() - 86400000,
+          },
+          {
+            id: 2,
+            scamType: "Lottery Scam",
+            description: "SMS claiming I won a prize.",
+            timestamp: Date.now() - 172800000,
+          },
+          {
+            id: 3,
+            scamType: "Investment Fraud",
+            description: "Promised high returns on a crypto investment.",
+            timestamp: Date.now() - 259200000,
+          },
+          {
+            id: 4,
+            scamType: "Tech Support Scam",
+            description: "Pop-up saying my computer has a virus.",
+            timestamp: Date.now() - 345600000,
+          },
+        ];
+        setPendingScams(initialPendingReports);
+        localStorage.setItem(
+          "pendingScams",
+          JSON.stringify(initialPendingReports)
+        );
+      }
+
+      const storedUsers = localStorage.getItem("managedUsers");
+      if (storedUsers) {
+        setManagedUsers(JSON.parse(storedUsers));
+      } else {
+        // If no users in storage, initialize with mock data
+        setManagedUsers(initialUsers);
+        localStorage.setItem("managedUsers", JSON.stringify(initialUsers));
+      }
+    } catch (error) {
+      console.error("Failed to parse data from localStorage", error);
+      // Fallback to mock data if parsing fails
+      setManagedUsers(initialUsers);
     }
+  }, []);
+
+  // Persist user changes to localStorage
+  useEffect(() => {
+    // Avoid overwriting initial state on first render
+    if (managedUsers.length > 0) {
+      localStorage.setItem("managedUsers", JSON.stringify(managedUsers));
+    }
+  }, [managedUsers]);
+
+  // Listen for storage changes from other tabs
+  useEffect(() => {
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key === "pendingScams" && event.newValue) {
+        try {
+          setPendingScams(JSON.parse(event.newValue));
+          toast.info("New incident report received!");
+        } catch (error) {
+          console.error("Failed to parse pendingScams from storage", error);
+        }
+      }
+      if (event.key === "managedUsers" && event.newValue) {
+        try {
+          setManagedUsers(JSON.parse(event.newValue));
+          toast.info("User data has been updated.");
+        } catch (error) {
+          console.error("Failed to parse managedUsers from storage", error);
+        }
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+    };
   }, []);
 
   const renderActiveView = () => {
     switch (activeView) {
       case "dashboard":
-        return <MemoizedDashboardView />;
+        return <MemoizedDashboardView userReportCount={pendingScams.length} />;
       case "reports":
         return <MemoizedReportsView />;
       case "userManagement":
-        return <MemoizedUserManagementView />;
+        return (
+          <MemoizedUserManagementView
+            users={managedUsers}
+            setUsers={setManagedUsers}
+          />
+        );
       case "threatMap":
         return <MemoizedThreatMapView />;
       case "incidentReview":
@@ -2609,7 +2712,7 @@ function DashboardContent({ onLogout }: { onLogout: () => void }) {
       case "settings":
         return <MemoizedSettingsView />;
       default:
-        return <MemoizedDashboardView />;
+        return <MemoizedDashboardView userReportCount={pendingScams.length} />;
     }
   };
 

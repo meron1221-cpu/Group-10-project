@@ -101,34 +101,6 @@ const orbitron = Orbitron({
   variable: "--font-orbitron", // Define a CSS variable for global use
 });
 
-// --- GLOBAL CSS FOR ORBITRON ---
-const GlobalStyle = () => (
-  <style jsx global>{`
-    :root {
-      --font-orbitron: ${orbitron.style.fontFamily};
-    }
-    html,
-    body,
-    * {
-      font-family: var(--font-orbitron), sans-serif !important;
-    }
-    /* Ensure UI components use Orbitron */
-    .ui-card,
-    .ui-button,
-    .ui-table,
-    .ui-input,
-    .ui-select,
-    .ui-badge,
-    .ui-tabs,
-    .ui-switch,
-    .ui-textarea,
-    .ui-skeleton,
-    .ui-dialog {
-      font-family: var(--font-orbitron), sans-serif !important;
-    }
-  `}</style>
-);
-
 // --- TYPES & MOCK DATA ---
 interface DetectedThreat {
   id: string;
@@ -157,8 +129,8 @@ function MonitoringPageContent() {
   const mockSession = {
     user: { id: "user-123", name: "Alex Ryder", email: "alex@example.com" },
   };
-  const currentSession =
-    session || (status === "unauthenticated" ? null : mockSession);
+  // Always provide a session, either the real one or the mock one.
+  const currentSession = session || mockSession;
 
   const [monitoredDomains, setMonitoredDomains] = useState<string[]>([]);
   const [newDomain, setNewDomain] = useState("");
@@ -184,11 +156,28 @@ function MonitoringPageContent() {
     setIsLoading(false);
   }, [currentSession?.user?.id]);
 
-  // --- NEW: Realistic Threat Simulation Logic ---
+  // --- Real-time monitoring simulation ---
+  useEffect(() => {
+    if (monitoredDomains.length === 0) {
+      return; // Don't run the interval if no domains are monitored
+    }
+
+    const intervalId = setInterval(() => {
+      // Pick a random domain to scan to make it feel more natural
+      const randomDomain =
+        monitoredDomains[Math.floor(Math.random() * monitoredDomains.length)];
+      simulateThreatDetection(randomDomain);
+    }, 15000); // Simulate a scan every 15 seconds
+
+    return () => clearInterval(intervalId); // Cleanup on component unmount
+  }, [monitoredDomains]);
+
+  // --- Realistic Threat Simulation Logic ---
   const simulateThreatDetection = (domain: string) => {
     // Only find a threat about 50% of the time to make it feel more realistic
     if (Math.random() < 0.5) {
-      toast.info(`Scan complete for ${domain}. No immediate threats found.`);
+      // We can skip the toast message for "no threats" to reduce noise
+      // toast.info(`Scan complete for ${domain}. No immediate threats found.`);
       return;
     }
 
@@ -271,7 +260,7 @@ function MonitoringPageContent() {
         );
       }
       toast.success(`Started monitoring: ${newDomain}`);
-      // Trigger the one-time scan
+      // Trigger the one-time scan immediately upon adding
       simulateThreatDetection(newDomain);
       setNewDomain("");
     } else {
@@ -302,32 +291,10 @@ function MonitoringPageContent() {
     }
   };
 
-  if (status === "loading") {
+  if (status === "loading" || isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="h-12 w-12 animate-spin" />
-      </div>
-    );
-  }
-
-  if (!currentSession) {
-    return (
-      <div
-        className={`flex min-h-screen items-center justify-center bg-slate-100 dark:bg-gray-900 p-4 ${orbitron.className}`}
-      >
-        <Card className="text-center ui-card">
-          <CardHeader>
-            <CardTitle>Access Denied</CardTitle>
-            <CardDescription>
-              Please sign in to access the domain monitoring dashboard.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Link href="/auth/login">
-              <Button className="ui-button">Sign In</Button>
-            </Link>
-          </CardContent>
-        </Card>
       </div>
     );
   }
@@ -336,7 +303,6 @@ function MonitoringPageContent() {
     <div
       className={`min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-900 dark:to-blue-950 py-12 ${orbitron.className}`}
     >
-      <GlobalStyle /> {/* Inject global Orbitron font styles */}
       <div className="container mx-auto px-4">
         <AnimatedSection>
           <div className="text-center mb-12">
@@ -354,9 +320,17 @@ function MonitoringPageContent() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
           {/* Left Column: Domain Management */}
           <AnimatedSection>
-            <Card className="lg:col-span-1 shadow-xl dark:bg-gray-800/70 ui-card">
+            <Card className="lg:col-span-1 shadow-xl dark:bg-gray-800/70">
               <CardHeader>
-                <CardTitle>Monitored Domains</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  Monitored Domains
+                  {monitoredDomains.length > 0 && (
+                    <span className="relative flex h-3 w-3">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-3 w-3 bg-sky-500"></span>
+                    </span>
+                  )}
+                </CardTitle>
                 <CardDescription>
                   Add or remove domains you want to protect.
                 </CardDescription>
@@ -367,9 +341,8 @@ function MonitoringPageContent() {
                     placeholder="e.g., yourbrand.com"
                     value={newDomain}
                     onChange={(e) => setNewDomain(e.target.value)}
-                    className="ui-input"
                   />
-                  <Button onClick={handleAddDomain} className="ui-button">
+                  <Button onClick={handleAddDomain}>
                     <PlusCircle className="h-4 w-4" />
                   </Button>
                 </div>
@@ -387,7 +360,7 @@ function MonitoringPageContent() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-6 w-6 ui-button"
+                          className="h-6 w-6"
                           onClick={() => handleRemoveDomain(domain)}
                         >
                           <X className="h-4 w-4" />
@@ -407,7 +380,7 @@ function MonitoringPageContent() {
           {/* Right Column: Threats Dashboard */}
           <div className="lg:col-span-2">
             <AnimatedSection>
-              <Card className="shadow-xl dark:bg-gray-800/70 ui-card">
+              <Card className="shadow-xl dark:bg-gray-800/70">
                 <CardHeader>
                   <CardTitle>Detected Threats Dashboard</CardTitle>
                   <CardDescription>
@@ -415,7 +388,7 @@ function MonitoringPageContent() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Table className="ui-table">
+                  <Table>
                     <TableHeader>
                       <TableRow>
                         <TableHead>Suspicious Domain</TableHead>
@@ -429,16 +402,16 @@ function MonitoringPageContent() {
                         Array.from({ length: 3 }).map((_, i) => (
                           <TableRow key={i}>
                             <TableCell>
-                              <Skeleton className="h-4 w-40 ui-skeleton" />
+                              <Skeleton className="h-4 w-40" />
                             </TableCell>
                             <TableCell>
-                              <Skeleton className="h-4 w-32 ui-skeleton" />
+                              <Skeleton className="h-4 w-32" />
                             </TableCell>
                             <TableCell>
-                              <Skeleton className="h-6 w-16 ui-skeleton" />
+                              <Skeleton className="h-6 w-16" />
                             </TableCell>
                             <TableCell className="text-right">
-                              <Skeleton className="h-8 w-20 ml-auto ui-skeleton" />
+                              <Skeleton className="h-8 w-20 ml-auto" />
                             </TableCell>
                           </TableRow>
                         ))
@@ -452,16 +425,13 @@ function MonitoringPageContent() {
                               {threat.originalDomain}
                             </TableCell>
                             <TableCell>
-                              <Badge variant="destructive" className="ui-badge">
-                                {threat.risk}
-                              </Badge>
+                              <Badge variant="destructive">{threat.risk}</Badge>
                             </TableCell>
                             <TableCell className="text-right">
                               <Button
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => handleDismissThreat(threat.id)}
-                                className="ui-button"
                               >
                                 <X className="mr-2 h-4 w-4" />
                                 Dismiss
