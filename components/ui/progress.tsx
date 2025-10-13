@@ -1,5 +1,3 @@
-// In components/ui/progress.tsx
-
 "use client";
 
 import * as React from "react";
@@ -7,28 +5,24 @@ import * as ProgressPrimitive from "@radix-ui/react-progress";
 
 import { cn } from "@/lib/utils";
 
-// Define a new interface for the props that includes our custom one
-interface ProgressProps
-  extends React.ComponentPropsWithoutRef<typeof ProgressPrimitive.Root> {
-  indicatorClassName?: string;
-}
-
 const Progress = React.forwardRef<
   React.ElementRef<typeof ProgressPrimitive.Root>,
-  ProgressProps
+  React.ComponentPropsWithoutRef<typeof ProgressPrimitive.Root> & {
+    indicatorClassName?: string;
+  }
 >(({ className, value, indicatorClassName, ...props }, ref) => (
   <ProgressPrimitive.Root
     ref={ref}
     className={cn(
-      "relative h-4 w-full overflow-hidden rounded-full bg-secondary",
+      "relative h-2 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-800",
       className
     )}
     {...props}
   >
     <ProgressPrimitive.Indicator
       className={cn(
-        "h-full w-full flex-1 bg-primary transition-all",
-        indicatorClassName
+        "h-full w-full flex-1 transition-all",
+        indicatorClassName || "bg-blue-600"
       )}
       style={{ transform: `translateX(-${100 - (value || 0)}%)` }}
     />

@@ -229,12 +229,6 @@ const enTranslations = {
   // New for gamification
   guardianPoints: "Guardian Points",
   earnedPoints: "You've earned {points} Guardian Points!",
-  // New for B2B Monitoring
-  domainMonitoringTitle: "Proactive Brand & Domain Monitoring",
-  domainMonitoringSubtitle: "Protect your brand from impersonation.",
-  domainMonitoringDesc:
-    "Register your official domains and we'll scour the web for lookalike domains (typosquatting), alerting you to potential threats.",
-  learnAboutMonitoring: "Learn About Monitoring",
 };
 
 const translations: Record<"en" | "am", typeof enTranslations> = {
@@ -367,12 +361,6 @@ const translations: Record<"en" | "am", typeof enTranslations> = {
     // New for gamification
     guardianPoints: "የጠባቂ ነጥቦች",
     earnedPoints: "{points} የጠባቂ ነጥቦችን አግኝተዋል!",
-    // New for B2B Monitoring
-    domainMonitoringTitle: "Proactive Brand & Domain Monitoring",
-    domainMonitoringSubtitle: "Protect your brand from impersonation.",
-    domainMonitoringDesc:
-      "Register your official domains and we'll scour the web for lookalike domains (typosquatting), alerting you to potential threats.",
-    learnAboutMonitoring: "Learn About Monitoring",
   },
 };
 
@@ -1435,39 +1423,6 @@ const BlogPostSkeleton = () => (
   </div>
 );
 
-function DomainMonitoringSection() {
-  const { t } = useAppContext();
-  return (
-    <section
-      className={`py-24 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 ${orbitron.className}`}
-    >
-      <div className="container mx-auto px-4 text-center">
-        <AnimatedSection>
-          <Card className="max-w-4xl mx-auto p-8 shadow-xl dark:bg-gray-900">
-            <CardHeader>
-              <ShieldCheck className="h-16 w-16 text-green-600 mx-auto mb-4" />
-              <CardTitle className="text-3xl font-bold mb-2">
-                {t("domainMonitoringTitle")}
-              </CardTitle>
-              <CardDescription className="text-lg">
-                {t("domainMonitoringSubtitle")}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-gray-700 dark:text-gray-300">
-                {t("domainMonitoringDesc")}
-              </p>
-              <Button size="lg" className="bg-green-600 hover:bg-green-700">
-                <Link href="/monitoring">{t("learnAboutMonitoring")}</Link>
-              </Button>
-            </CardContent>
-          </Card>
-        </AnimatedSection>
-      </div>
-    </section>
-  );
-}
-
 function TeamSection() {
   const { t } = useAppContext();
   const teamMembers = [
@@ -1842,14 +1797,6 @@ function Footer() {
               {/* New Quick Links */}
               <li>
                 <Link
-                  href="/monitoring"
-                  className="hover:text-white transition-colors"
-                >
-                  {t("domainMonitoringTitle")}
-                </Link>
-              </li>
-              <li>
-                <Link
                   href="/leaderboard"
                   className="hover:text-white transition-colors"
                 >
@@ -1972,7 +1919,6 @@ function HomePageContent() {
         <AboutSection />
         <TestimonialsSection />
         <ReportScamSection />
-        <DomainMonitoringSection />
         <TeamSection />
         <ContactSection />
       </main>
