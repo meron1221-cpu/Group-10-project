@@ -166,8 +166,8 @@ export default function AnalyzePage() {
 
               <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
                 <p className="text-sm text-blue-700 dark:text-blue-300">
-                  <strong>Tip:</strong> The AI model has been trained on 5,572
-                  messages with 96.3% accuracy. It can detect various scam
+                  <strong>Tip:</strong> The AI model has been trained on 28,000+
+                  messages with 97.6% accuracy. It can detect various scam
                   patterns including lottery scams, phishing attempts, and
                   financial fraud.
                 </p>
@@ -349,8 +349,8 @@ export default function AnalyzePage() {
             </CardHeader>
             <CardContent>
               <ul className="space-y-2 text-sm text-gray-600">
-                <li>• Machine learning model trained on 5,572 messages</li>
-                <li>• 96.3% accuracy in scam detection</li>
+                <li>• Machine learning model trained on 28,000+ messages</li>
+                <li>• 97.6% accuracy in scam detection</li>
                 <li>• Analyzes patterns, keywords, and message structure</li>
                 <li>• Real-time classification with confidence scores</li>
                 <li>• Continuously learning from new scam patterns</li>

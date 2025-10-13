@@ -12,18 +12,30 @@ try:
 except LookupError:
     nltk.download('stopwords')
 
-# Load the trained model and vectorizer
+# Try to load the combined model first, then fall back to single dataset model
 try:
-    model = joblib.load('spam_model.joblib')
-    vectorizer = joblib.load('tfidf_vectorizer.joblib')
+    model = joblib.load('spam_model_combined.joblib')
+    vectorizer = joblib.load('tfidf_vectorizer_combined.joblib')
+    print("Loaded combined dataset model", file=sys.stderr)
 except Exception as e:
-    print(json.dumps({"error": f"Model loading failed: {str(e)}"}))
-    sys.exit(1)
+    try:
+        model = joblib.load('spam_model.joblib')
+        vectorizer = joblib.load('tfidf_vectorizer.joblib')
+        print("Loaded single dataset model", file=sys.stderr)
+    except Exception as e2:
+        print(json.dumps({"error": f"Model loading failed: {str(e2)}"}))
+        sys.exit(1)
 
 def preprocess_text(text):
     """Preprocess text in the same way as during training"""
     if isinstance(text, str):
         text = text.lower()
+        # Remove URLs
+        text = re.sub(r'http\S+|www\S+|https\S+', '', text, flags=re.MULTILINE)
+        # Remove email addresses
+        text = re.sub(r'\S+@\S+', '', text)
+        # Remove phone numbers
+        text = re.sub(r'[\+\(]?[1-9][0-9 .\-\(\)]{8,}[0-9]', '', text)
         text = text.translate(str.maketrans('', '', string.punctuation))
         text = re.sub(r'\d+', '', text)
         text = ' '.join(text.split())
@@ -44,12 +56,17 @@ def analyze_message(content):
     
     is_scam = prediction == 'spam'
     confidence = max(probability) * 100
-    scam_probability = probability[list(model.classes_).index('spam')] * 100 if 'spam' in model.classes_ else 0
+    
+    # Get probabilities for each class
+    if 'spam' in model.classes_:
+        spam_probability = probability[list(model.classes_).index('spam')] * 100
+    else:
+        spam_probability = 0
     
     # Determine risk level based on scam probability
-    if scam_probability > 80:
+    if spam_probability > 80:
         risk_level = "high"
-    elif scam_probability > 60:
+    elif spam_probability > 60:
         risk_level = "medium"
     else:
         risk_level = "low"
@@ -68,25 +85,25 @@ def analyze_message(content):
             "type": "Suspicious Keywords",
             "description": "Contains common scam terminology",
             "severity": "medium",
-            "found": any(word in content_lower for word in ['win', 'won', 'prize', 'free', 'cash', 'reward', 'lottery'])
+            "found": any(word in content_lower for word in ['win', 'won', 'prize', 'free', 'cash', 'reward', 'lottery', 'gift card', 'claim'])
         },
         {
             "type": "Urgent Language",
             "description": "Uses pressure tactics or urgent requests",
             "severity": "medium",
-            "found": any(word in content_lower for word in ['urgent', 'immediately', 'now', 'quick', 'hurry', 'limited'])
+            "found": any(word in content_lower for word in ['urgent', 'immediately', 'now', 'quick', 'hurry', 'limited', 'act now'])
         },
         {
             "type": "Financial Requests",
             "description": "Asks for money or financial information",
             "severity": "high",
-            "found": any(word in content_lower for word in ['money', 'payment', 'fee', 'account', 'bank', 'card', 'transfer'])
+            "found": any(word in content_lower for word in ['money', 'payment', 'fee', 'account', 'bank', 'card', 'transfer', 'password'])
         },
         {
             "type": "Prize Claims",
             "description": "Claims you've won something",
             "severity": "high",
-            "found": any(word in content_lower for word in ['winner', 'won', 'prize', 'award', 'reward'])
+            "found": any(word in content_lower for word in ['winner', 'won', 'prize', 'award', 'reward', 'congratulations'])
         },
         {
             "type": "Links or Contact Info",
@@ -98,12 +115,14 @@ def analyze_message(content):
     
     # Determine category
     if is_scam:
-        if any(word in content_lower for word in ['win', 'won', 'prize', 'lottery']):
+        if any(word in content_lower for word in ['win', 'won', 'prize', 'lottery', 'congrat']):
             detected_category = "Lottery/Prize Scam"
-        elif any(word in content_lower for word in ['bank', 'account', 'card', 'security']):
+        elif any(word in content_lower for word in ['bank', 'account', 'card', 'security', 'password']):
             detected_category = "Financial Phishing"
         elif any(word in content_lower for word in ['free', 'gift', 'offer']):
             detected_category = "Free Offer Scam"
+        elif any(word in content_lower for word in ['urgent', 'immediately', 'act now']):
+            detected_category = "Urgency Scam"
         else:
             detected_category = "Suspicious Spam"
     else:
@@ -111,13 +130,14 @@ def analyze_message(content):
     
     # Create summary and recommendations
     if is_scam:
-        summary = f"This message has been classified as {detected_category.lower()} with {scam_probability:.1f}% confidence. It shows characteristics commonly associated with scams."
+        summary = f"This message has been classified as {detected_category.lower()} with {spam_probability:.1f}% confidence. It shows characteristics commonly associated with scams."
         recommendations = [
             "Do not respond to this message",
             "Do not click any links or download attachments",
             "Do not share personal or financial information",
             "Block the sender if possible",
-            "Report as spam to your service provider"
+            "Report as spam to your service provider",
+            "Delete the message immediately"
         ]
     else:
         summary = f"This message appears to be legitimate with {confidence:.1f}% confidence. However, always exercise caution with unsolicited messages."
@@ -130,7 +150,7 @@ def analyze_message(content):
     
     return {
         "isScam": is_scam,
-        "confidence": scam_probability if is_scam else (100 - scam_probability),
+        "confidence": spam_probability if is_scam else (100 - spam_probability),
         "riskLevel": risk_level,
         "detectedCategory": detected_category,
         "indicators": indicators,
