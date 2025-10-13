@@ -9,20 +9,19 @@ const orbitron = Orbitron({
 });
 
 export const metadata: Metadata = {
-  title: "Gashasphere",
-  description: "Created by Group 10",
-  generator: "v0.dev",
+  title: "GashaSphere - Scam Detection",
+  description: "AI-powered scam detection and cybersecurity platform",
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
     <html lang="en">
-      {/* 2. Apply the font's className to the <body> tag. */}
-      <body className={orbitron.className}>{children}</body>
+      {/* 2. Apply the font's className and antialiased class to the <body> tag. */}
+      <body className={`${orbitron.className} antialiased`}>{children}</body>
     </html>
   );
 }

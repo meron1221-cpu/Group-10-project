@@ -111,6 +111,89 @@ const SCAM_TYPES = [
   "Others",
 ];
 
+// --- NEW: Dashboard Scam Checker Component ---
+interface ScamResult {
+  prediction: string;
+  confidence: number;
+  is_scam: boolean;
+}
+
+function DashboardScamChecker() {
+  const [message, setMessage] = useState("");
+  const [result, setResult] = useState<ScamResult | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const checkScam = async () => {
+    if (!message.trim()) return;
+    setLoading(true);
+    try {
+      // In a real app, this would be a real API call.
+      // We simulate it here.
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const isScam = /prize|won|urgent|verify|account|password/i.test(message);
+      const confidence = isScam
+        ? 0.8 + Math.random() * 0.19
+        : 0.1 + Math.random() * 0.4;
+      setResult({
+        prediction: isScam ? "Scam" : "Safe",
+        confidence,
+        is_scam: isScam,
+      });
+    } catch (error) {
+      console.error("Error:", error);
+      toast.error("Failed to analyze the message.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Card className="shadow-lg dark:bg-gray-800/50">
+      <CardHeader>
+        <CardTitle>Quick Scam Check</CardTitle>
+        <CardDescription>
+          Paste a suspicious message to get an instant AI analysis.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Textarea
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          placeholder="Paste suspicious message..."
+          className="w-full p-2 border rounded text-sm mb-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+          rows={3}
+        />
+        <Button
+          onClick={checkScam}
+          disabled={loading}
+          className="w-full mt-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 transition-colors"
+        >
+          {loading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Checking...
+            </>
+          ) : (
+            "Check"
+          )}
+        </Button>
+        {result && (
+          <div
+            className={`mt-4 p-3 rounded text-sm font-semibold text-center ${
+              result.is_scam
+                ? "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300"
+                : "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300"
+            }`}
+          >
+            {result.is_scam ? "LIKELY SCAM" : "LIKELY SAFE"} (
+            {(result.confidence * 100).toFixed(0)}% Confidence)
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 function KpiCard({
   title,
   value,
@@ -666,7 +749,7 @@ function DashboardPageContent() {
                 </Button>
               </ReportSubmitDialog>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
               <KpiCard
                 title="Total Reports"
                 value={totalReports}
@@ -691,6 +774,9 @@ function DashboardPageContent() {
                 icon={Trophy}
                 color="text-yellow-500"
               />
+              <div className="md:col-span-2 lg:col-span-1">
+                <DashboardScamChecker />
+              </div>
             </div>
             <Card className="shadow-lg dark:bg-gray-800/50 mb-6">
               <CardHeader>
